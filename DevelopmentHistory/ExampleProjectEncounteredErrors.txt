@@ -1,0 +1,324 @@
+AUKETT HEESE REVIT ADD-IN 2024 - ENCOUNTERED ERRORS LOG
+=======================================================
+
+This file tracks all unique errors encountered during development, their solutions, and lessons learned.
+Each error is documented only once, even if encountered multiple times.
+
+BUILD AND COMPILATION ERRORS:
+============================
+
+1. ERROR: "msbuild command not recognized"
+   - CONTEXT: Initial build attempts
+   - CAUSE: Using msbuild instead of dotnet build
+   - SOLUTION: Switched to "dotnet build" command
+   - LESSON: Use dotnet CLI for SDK-style projects
+
+2. ERROR: "UIApplication does not contain a definition for StatusBar"
+   - CONTEXT: Attempting to use StatusBar API
+   - CAUSE: StatusBar API varies by Revit version
+   - SOLUTION: Removed StatusBar API call
+   - LESSON: Check API compatibility across Revit versions
+
+3. ERROR: "BitmapImage and ImageSource types not found"
+   - CONTEXT: WPF icon loading implementation
+   - CAUSE: Missing WPF references in project
+   - SOLUTION: Added PresentationCore, WindowsBase, System.Xaml references
+   - LESSON: WPF requires specific .NET Framework references
+
+4. ERROR: "TestRevitAddin.dll locked during deployment"
+   - CONTEXT: Attempting to copy DLL to Revit add-ins folder
+   - CAUSE: Revit was running and had the DLL locked
+   - SOLUTION: Close Revit before copying DLL
+   - LESSON: Always close target application before deployment
+
+5. ERROR: "Local variable assemblyPath declared in an enclosing scope"
+   - CONTEXT: Icon loading code in App.cs
+   - CAUSE: Variable name conflict in nested scope
+   - SOLUTION: Renamed inner variable to currentAssemblyPath
+   - LESSON: Use unique variable names in nested scopes
+
+6. ERROR: "PushButton does not contain a definition for Text"
+   - CONTEXT: Debug output for button properties
+   - CAUSE: Incorrect property access
+   - SOLUTION: Used button.ItemText instead of button.Text
+   - LESSON: Check correct property names in Revit API
+
+7. ERROR: "InitializeComponent not found, duplicate members"
+   - CONTEXT: WPF build attempts
+   - CAUSE: Old .csproj format not properly configured for WPF
+   - SOLUTION: Converted to SDK-style project format
+   - LESSON: SDK-style projects handle WPF compilation automatically
+
+8. ERROR: "Duplicate AssemblyInfo attributes"
+   - CONTEXT: SDK-style project conversion
+   - CAUSE: SDK projects auto-generate assembly info
+   - SOLUTION: Set GenerateAssemblyInfo to false in .csproj
+   - LESSON: SDK projects handle assembly info differently
+
+9. ERROR: "XAML build error MC1000 (Value cannot be null)"
+   - CONTEXT: ContentBrowserWindow.xaml compilation
+   - CAUSE: Problematic ColorConverter reference
+   - SOLUTION: Removed ColorConverter reference from XAML
+   - LESSON: Check XAML for invalid resource references
+
+10. ERROR: "Install.bat not copying .addin file"
+    - CONTEXT: Deployment script execution
+    - CAUSE: DOS syntax in PowerShell environment
+    - SOLUTION: Used Copy-Item (PowerShell syntax) instead of copy
+    - LESSON: Use appropriate command syntax for the shell environment
+
+11. ERROR: "dotnet build ambiguity due to multiple .csproj files"
+    - CONTEXT: Build command execution
+    - CAUSE: Multiple project files in directory
+    - SOLUTION: Specified exact project file: dotnet build AukettHeeseRevitAddin2024.csproj
+    - LESSON: Be explicit about which project to build
+
+12. ERROR: "Duplicate class definitions and namespace conflicts"
+    - CONTEXT: Multiple ContentFilesCommand classes
+    - CAUSE: Duplicate files from previous development iterations
+    - SOLUTION: Removed duplicate ContentFilesWpfCommand.cs
+    - LESSON: Clean up duplicate files regularly
+
+13. ERROR: "Duplicate WPF window files"
+    - CONTEXT: ContentBrowser window compilation
+    - CAUSE: Multiple versions of same XAML files
+    - SOLUTION: Removed ContentBrowserWindowWpf.xaml and .xaml.cs
+    - LESSON: Maintain single source of truth for UI files
+
+14. ERROR: "Method override issues in WipCommand inheritance"
+    - CONTEXT: PlaceholderCommand and SettingsCommand implementation
+    - CAUSE: Attempting to override methods instead of properties
+    - SOLUTION: Used property overrides (FeatureName, PlannedFeatures)
+    - LESSON: Check base class for correct override patterns
+
+ICON AND RESOURCE ERRORS:
+========================
+
+15. ERROR: "Embedded resource not found"
+    - CONTEXT: Icon loading from embedded resources
+    - CAUSE: Incorrect resource path format
+    - SOLUTION: Used correct namespace.folder.filename format
+    - LESSON: Resource paths must match exact file structure
+
+16. ERROR: "Icons loaded but not displayed visually"
+    - CONTEXT: Ribbon button icon assignment
+    - CAUSE: Icons not 96 DPI (Revit requirement)
+    - SOLUTION: User manually updated icon files to 96 DPI
+    - LESSON: Revit ribbon icons must be exactly 96 DPI
+
+17. ERROR: "Icon filename mismatches"
+    - CONTEXT: Icon resource loading
+    - CAUSE: Using underscores in code but hyphens in filenames
+    - SOLUTION: Updated code to use hyphens: help-32_96dpi.png
+    - LESSON: Resource names must match exact filenames
+
+DEPLOYMENT AND INSTALLATION ERRORS:
+==================================
+
+18. ERROR: "Install.bat requires administrator privileges"
+    - CONTEXT: Deployment script execution
+    - CAUSE: Writing to ProgramData requires admin rights
+    - SOLUTION: Right-click and "Run as administrator"
+    - LESSON: System folders require elevated privileges
+
+19. ERROR: "Add-in not appearing after installation"
+    - CONTEXT: Post-installation verification
+    - CAUSE: .addin file not copied due to script error
+    - SOLUTION: Manually copied .addin file using PowerShell
+    - LESSON: Verify all required files are deployed
+
+POWERSHELL AND COMMAND LINE ERRORS:
+==================================
+
+20. ERROR: "&& token not a valid statement separator"
+    - CONTEXT: PowerShell command execution
+    - CAUSE: Using DOS syntax in PowerShell
+    - SOLUTION: Used semicolon (;) instead of && for command chaining
+    - LESSON: PowerShell has different syntax than Command Prompt
+
+21. ERROR: "Command not found or path issues"
+    - CONTEXT: Various command executions
+    - CAUSE: Working directory or PATH issues
+    - SOLUTION: Used full paths and proper directory navigation
+    - LESSON: Always verify working directory and use absolute paths when needed
+
+GIT AND VERSION CONTROL ERRORS:
+==============================
+
+22. ERROR: "Git commit failed - no user configuration"
+    - CONTEXT: Attempting to commit changes
+    - CAUSE: Git user.email and user.name not configured
+    - SOLUTION: User manually configured Git global settings
+    - LESSON: Git requires user configuration before first commit
+
+PROJECT STRUCTURE ERRORS:
+========================
+
+23. ERROR: "Namespace conflicts after project renaming"
+    - CONTEXT: Project renaming from TestRevitAddin
+    - CAUSE: Incomplete namespace updates
+    - SOLUTION: Updated all namespace references systematically
+    - LESSON: Project renaming requires comprehensive namespace updates
+
+24. ERROR: "Missing references after project conversion"
+    - CONTEXT: SDK-style project conversion
+    - CAUSE: Reference paths not updated for new project structure
+    - SOLUTION: Updated all reference paths to match new structure
+    - LESSON: Project structure changes require reference updates
+
+WPF AND UI ERRORS:
+==================
+
+25. ERROR: "Low FPS animations in WPF"
+    - CONTEXT: Content card hover animations
+    - CAUSE: Complex storyboard animations causing performance issues
+    - SOLUTION: Replaced with simple ScaleTransform triggers
+    - LESSON: Simple animations perform better than complex storyboards
+
+26. ERROR: "XAML resource loading failures"
+    - CONTEXT: WPF window resource loading
+    - CAUSE: Incorrect pack:// URI format
+    - SOLUTION: Used correct pack://application:,,,/ format
+    - LESSON: WPF resource URIs have specific format requirements
+
+CONFIGURATION AND SETTINGS ERRORS:
+=================================
+
+27. ERROR: "JSON configuration file not found"
+    - CONTEXT: Content configuration loading
+    - CAUSE: File path or embedding issues
+    - SOLUTION: Created proper content-config.json with embedded resource
+    - LESSON: Configuration files need proper embedding and path handling
+
+28. ERROR: "Settings not persisting between sessions"
+    - CONTEXT: Window position and size settings
+    - CAUSE: Settings not properly saved on window close
+    - SOLUTION: Implemented proper OnClosing event handler
+    - LESSON: Settings persistence requires explicit save operations
+
+ERROR PREVENTION STRATEGIES:
+===========================
+
+1. BUILD PROCESS:
+   - Always use "dotnet build" for SDK-style projects
+   - Specify exact project file when multiple exist
+   - Clean solution before major changes
+
+2. DEPLOYMENT:
+   - Close Revit before copying files
+   - Run deployment scripts as administrator
+   - Verify all required files are copied
+
+3. RESOURCE MANAGEMENT:
+   - Use exact filename matches for embedded resources
+   - Ensure 96 DPI for Revit ribbon icons
+   - Use correct pack:// URIs for WPF resources
+
+4. CODE ORGANIZATION:
+   - Regular cleanup of duplicate files
+   - Consistent naming conventions
+   - Proper namespace management
+
+5. ERROR HANDLING:
+   - Comprehensive try-catch blocks
+   - User-friendly error messages
+   - Graceful fallbacks for missing resources
+
+29. ERROR: "Namespace conflicts - duplicate GeneralSettings class"
+    - CONTEXT: AdminConfig.cs creation
+    - CAUSE: Two GeneralSettings classes in same namespace (AppSettings.cs and AdminConfig.cs)
+    - SOLUTION: Renamed AdminConfig.GeneralSettings to AdminGeneralSettings
+    - LESSON: Check for naming conflicts when creating new model classes
+
+30. ERROR: "C# 7.3 null-coalescing assignment operator not supported"
+    - CONTEXT: AdminConfigurationService.cs compilation
+    - CAUSE: Using `??=` operator which requires C# 8.0+
+    - SOLUTION: Replaced with explicit null check: `if (config == null) config = CurrentConfig;`
+    - LESSON: .NET Framework 4.8 uses older C# version, check language feature compatibility
+
+31. ERROR: "Static method name conflict with Window.ShowDialog()"
+    - CONTEXT: AdminPasswordDialog.xaml.cs compilation
+    - CAUSE: Custom static method named ShowDialog conflicts with Window.ShowDialog()
+    - SOLUTION: Renamed method to ShowAuthenticationDialog()
+    - LESSON: Avoid naming conflicts with framework methods, use descriptive names
+
+32. ERROR: "PowerShell console buffer overflow"
+    - CONTEXT: Copy-Item command execution
+    - CAUSE: PowerShell PSReadLine module buffer size issue
+    - SOLUTION: Command completed successfully despite error display
+    - LESSON: PowerShell console errors don't always indicate command failure
+
+33. ERROR: "XAML TypeConverterMarkupExtension exception in AdminPasswordDialog"
+    - CONTEXT: Admin Panel button click
+    - CAUSE: Incorrect pack:// URI format for embedded resource icon
+    - SOLUTION: Removed problematic Icon attribute from XAML
+    - LESSON: Embedded resource URIs in XAML require correct pack:// format
+
+34. ERROR: "PasswordBox Style property exception in AdminPasswordDialog"
+    - CONTEXT: Admin Panel button click (second attempt)
+    - CAUSE: Applying TextBox style to PasswordBox control (incompatible control templates)
+    - SOLUTION: Created separate ModernPasswordBoxStyle for PasswordBox
+    - LESSON: Different WPF controls require different styles, even if they look similar
+
+35. ERROR: "AdminConfigurationService.cs file missing"
+    - CONTEXT: Admin Panel authentication implementation
+    - CAUSE: File was referenced but not created in Services folder
+    - SOLUTION: Created complete AdminConfigurationService.cs with all authentication functionality
+    - LESSON: Ensure all referenced files exist before building
+
+36. ERROR: "Configuration file with wrong password hash"
+    - CONTEXT: Password authentication testing
+    - CAUSE: Old configuration file contained hash for "admin2024" instead of "MisterBim"
+    - SOLUTION: Deleted old config file, redeployed to create fresh configuration
+    - LESSON: Configuration files persist between deployments, may need manual cleanup
+
+37. ERROR: "PowerShell console buffer overflow during deployment"
+    - CONTEXT: Copy-Item command execution
+    - CAUSE: PowerShell PSReadLine module buffer size issue
+    - SOLUTION: Command completed successfully despite error display
+    - LESSON: PowerShell console errors don't always indicate command failure
+
+38. ERROR: "Content Library showing 0 items despite configuration file"
+    - CONTEXT: Content Browser window loading
+    - CAUSE: ConfigurationService loading from wrong location (app-settings.json instead of content-config.json)
+    - SOLUTION: Updated ConfigurationService to load from Data/content-config.json first, then fallback
+    - LESSON: Configuration loading paths must match actual file locations
+
+39. ERROR: "Data folder not copied to deployed location"
+    - CONTEXT: Content Library deployment
+    - CAUSE: Project file configured to copy content-config.json but Data folder structure not deployed
+    - SOLUTION: Manually copied entire Data folder to Revit add-ins location
+    - LESSON: Content files need to be deployed alongside DLL files
+
+40. ERROR: "Revit loading from user profile instead of system-wide location"
+    - CONTEXT: Add-in deployment and updates
+    - CAUSE: Revit was loading from AppData\Roaming instead of ProgramData location
+    - SOLUTION: Switched deployment to user profile location for development convenience
+    - LESSON: Revit checks multiple add-in locations, user profile often takes precedence
+
+41. ERROR: "Refresh status message not indicating refresh occurred"
+    - CONTEXT: Content Library refresh button
+    - CAUSE: Status message same as initial load, no indication of refresh action
+    - SOLUTION: Updated refresh message to show "🔄 Refreshed! Loaded X Content Items"
+    - LESSON: User feedback should clearly indicate when actions are completed
+
+42. ERROR: "CS0168 warning - unused exception variable in catch block"
+    - CONTEXT: LibraryManagementWindow.xaml.cs compilation
+    - CAUSE: Exception variable 'ex' declared but never used in catch block
+    - SOLUTION: Changed catch (Exception ex) to catch (Exception) to remove unused variable
+    - LESSON: Always handle or remove unused variables to avoid compiler warnings
+
+43. ERROR: "Incorrect naming convention for Dynamo Scripts location setting"
+    - CONTEXT: Admin Panel UI and configuration
+    - CAUSE: Used "Dynamo scripts location" instead of "Dynamo scripts metadata location"
+    - SOLUTION: Updated all references to use "metadata location" terminology consistently
+    - LESSON: Maintain consistent naming conventions throughout the application
+
+44. ERROR: "Visual inconsistency between Dynamo Scripts and Content Library Management windows"
+    - CONTEXT: DynamoScriptsManagementWindow design
+    - CAUSE: Different layout, colors, and styling compared to LibraryManagementWindow
+    - SOLUTION: Completely redesigned DynamoScriptsManagementWindow to match LibraryManagementWindow exactly
+    - LESSON: Maintain visual consistency across similar management interfaces
+
+LAST UPDATED: Current Session
+TOTAL UNIQUE ERRORS DOCUMENTED: 44

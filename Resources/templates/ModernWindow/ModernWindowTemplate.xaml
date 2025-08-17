@@ -1,0 +1,644 @@
+<!--
+    MODERN WINDOW TEMPLATE - Aukett + Heese Revit Add-In 2024
+    =========================================================
+    
+    This template provides a complete, scalable foundation for all application windows.
+    It includes all necessary styles, layouts, and components for consistent UI design.
+    
+    USAGE:
+    1. Copy this template to create new windows
+    2. Replace placeholder content with actual functionality
+    3. Customize colors, icons, and branding as needed
+    4. Extend with additional features while maintaining design consistency
+    
+    FEATURES:
+    - Modern gradient header with branding
+    - Scalable content area with scrolling
+    - Professional footer with status and actions
+    - Complete style system for buttons, cards, and inputs
+    - Responsive layout that adapts to content
+    - Consistent typography and spacing
+    - Hover effects and animations
+    - Error handling and loading states
+    
+    SCALABILITY:
+    - Modular component structure
+    - Reusable styles and templates
+    - Configurable content areas
+    - Extensible action systems
+    - Flexible data binding support
+-->
+
+<Window x:Class="AukettHeeseRevitAddin2024.Windows.Template.ModernWindowTemplate"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding WindowTitle, FallbackValue='Modern Window - Aukett + Heese'}"
+        Height="800" Width="1000"
+        MinHeight="500" MinWidth="700"
+        WindowStartupLocation="CenterOwner"
+        Background="#F8F9FA"
+        ResizeMode="CanResize">
+
+    <!-- ========================================
+         GLOBAL RESOURCES AND STYLES
+         ======================================== -->
+    <Window.Resources>
+        
+        <!-- ========================================
+             COLOR PALETTE - BRAND COLORS
+             ======================================== -->
+        <SolidColorBrush x:Key="PrimaryBlue" Color="#0078D4"/>
+        <SolidColorBrush x:Key="PrimaryBlueDark" Color="#106EBE"/>
+        <SolidColorBrush x:Key="PrimaryBlueDarker" Color="#005A9E"/>
+        <SolidColorBrush x:Key="PrimaryBlueDarkest" Color="#004578"/>
+        <SolidColorBrush x:Key="SecondaryGray" Color="#6C757D"/>
+        <SolidColorBrush x:Key="SecondaryGrayDark" Color="#5A6268"/>
+        <SolidColorBrush x:Key="SecondaryGrayDarker" Color="#495057"/>
+        <SolidColorBrush x:Key="LightGray" Color="#F8F9FA"/>
+        <SolidColorBrush x:Key="LightGrayDark" Color="#E9ECEF"/>
+        <SolidColorBrush x:Key="BorderGray" Color="#DEE2E6"/>
+        <SolidColorBrush x:Key="TextDark" Color="#2C3E50"/>
+        <SolidColorBrush x:Key="TextMedium" Color="#6C757D"/>
+        <SolidColorBrush x:Key="TextLight" Color="#ADB5BD"/>
+        <SolidColorBrush x:Key="SuccessGreen" Color="#28A745"/>
+        <SolidColorBrush x:Key="WarningOrange" Color="#FFC107"/>
+        <SolidColorBrush x:Key="ErrorRed" Color="#DC3545"/>
+        <SolidColorBrush x:Key="InfoBlue" Color="#17A2B8"/>
+
+        <!-- ========================================
+             GRADIENT BRUSHES
+             ======================================== -->
+        <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#0078D4" Offset="0"/>
+            <GradientStop Color="#005A9E" Offset="0.5"/>
+            <GradientStop Color="#004578" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <LinearGradientBrush x:Key="CardGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="White" Offset="0"/>
+            <GradientStop Color="#FAFBFC" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <LinearGradientBrush x:Key="PrimaryButtonGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#0078D4" Offset="0"/>
+            <GradientStop Color="#106EBE" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <LinearGradientBrush x:Key="PrimaryButtonHoverGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#106EBE" Offset="0"/>
+            <GradientStop Color="#005A9E" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <LinearGradientBrush x:Key="SecondaryButtonGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#6C757D" Offset="0"/>
+            <GradientStop Color="#5A6268" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <LinearGradientBrush x:Key="SecondaryButtonHoverGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#5A6268" Offset="0"/>
+            <GradientStop Color="#495057" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- ========================================
+             TYPOGRAPHY STYLES
+             ======================================== -->
+        <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Effect" Value="{x:Null}"/>
+        </Style>
+        
+        <Style x:Key="SubheaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="#E1E8F0"/>
+            <Setter Property="Margin" Value="0,8,0,0"/>
+        </Style>
+        
+        <Style x:Key="TitleTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextDark}"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        
+        <Style x:Key="BodyTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMedium}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="20"/>
+            <Setter Property="Margin" Value="0,0,0,15"/>
+        </Style>
+        
+        <Style x:Key="StatusTextStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMedium}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- ========================================
+             CARD STYLES - SCALABLE COMPONENTS
+             ======================================== -->
+        
+        <!-- Base Card Style with Hover Animation -->
+        <Style x:Key="ModernCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardGradient}"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Margin" Value="15"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="BorderBrush" Value="#E1E5E9"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#C8D1DB" Direction="270" ShadowDepth="3" BlurRadius="12" Opacity="0.3"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="RenderTransform">
+                        <Setter.Value>
+                            <ScaleTransform ScaleX="1.03" ScaleY="1.03"/>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- List Item Card Style (No Hover Animation) -->
+        <Style x:Key="ListItemCardStyle" TargetType="Border" BasedOn="{StaticResource ModernCardStyle}">
+            <Setter Property="Margin" Value="0,0,0,16"/>
+            <Setter Property="RenderTransform" Value="{x:Null}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="RenderTransform" Value="{x:Null}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ========================================
+             BUTTON STYLES - COMPLETE SYSTEM
+             ======================================== -->
+        
+        <!-- Base Button Style -->
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="Margin" Value="0,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                CornerRadius="6" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Primary Button -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+            <Setter Property="Background" Value="{StaticResource PrimaryButtonGradient}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource PrimaryButtonHoverGradient}"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#CCCCCC"/>
+                    <Setter Property="Foreground" Value="#666666"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Secondary Button -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+            <Setter Property="Background" Value="{StaticResource SecondaryButtonGradient}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SecondaryButtonHoverGradient}"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#CCCCCC"/>
+                    <Setter Property="Foreground" Value="#666666"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Light Secondary Button -->
+        <Style x:Key="LightSecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#F8F9FA" Offset="0"/>
+                        <GradientStop Color="#E9ECEF" Offset="1"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Foreground" Value="{StaticResource TextMedium}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderGray}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background">
+                        <Setter.Value>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Color="#E9ECEF" Offset="0"/>
+                                <GradientStop Color="#DEE2E6" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="{StaticResource LightGray}"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextLight}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Transparent Button for Header -->
+        <Style x:Key="HeaderButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+
+        <!-- ========================================
+             INPUT STYLES
+             ======================================== -->
+        
+        <!-- Modern TextBox Style -->
+        <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Background" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="Text" Value="">
+                    <Setter Property="Background" Value="{StaticResource LightGray}"/>
+                </Trigger>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryBlue}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ========================================
+             STATUS INDICATOR STYLES
+             ======================================== -->
+        
+        <!-- Status Dot Style -->
+        <Style x:Key="StatusDotStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        
+        <!-- Large Status Dot Style -->
+        <Style x:Key="LargeStatusDotStyle" TargetType="Ellipse" BasedOn="{StaticResource StatusDotStyle}">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+        </Style>
+
+        <!-- ========================================
+             LAYOUT TEMPLATES
+             ======================================== -->
+        
+        <!-- Grid Layout Template (3 columns) -->
+        <ItemsPanelTemplate x:Key="GridLayoutTemplate">
+            <UniformGrid Columns="3"/>
+        </ItemsPanelTemplate>
+        
+        <!-- List Layout Template (1 column) -->
+        <ItemsPanelTemplate x:Key="ListLayoutTemplate">
+            <StackPanel Orientation="Vertical"/>
+        </ItemsPanelTemplate>
+
+    </Window.Resources>
+
+    <!-- ========================================
+         MAIN WINDOW LAYOUT
+         ======================================== -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ========================================
+             HEADER SECTION - BRANDED BANNER
+             ======================================== -->
+        <Border Grid.Row="0" CornerRadius="0,0,0,0">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#0078D4" Offset="0"/>
+                    <GradientStop Color="#005A9E" Offset="0.5"/>
+                    <GradientStop Color="#004578" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid Margin="30,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Header Content -->
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="HeaderTitle"
+                               Text="{Binding HeaderTitle, FallbackValue='🎨 Aukett + Heese Window'}" 
+                               Style="{StaticResource HeaderTextStyle}"/>
+                    <TextBlock x:Name="HeaderSubtitle"
+                               Text="{Binding HeaderSubtitle, FallbackValue='Modern window template with scalable design'}" 
+                               Style="{StaticResource SubheaderTextStyle}"/>
+                </StackPanel>
+
+                <!-- Header Actions -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="RefreshButton"
+                            Content="🔄 Refresh" 
+                            Style="{StaticResource HeaderButtonStyle}"
+                            Click="RefreshButton_Click"
+                            Visibility="{Binding ShowRefreshButton, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Visible}"/>
+                    <Button x:Name="SettingsButton"
+                            Content="⚙️ Settings" 
+                            Style="{StaticResource HeaderButtonStyle}"
+                            Click="SettingsButton_Click"
+                            Margin="10,0,0,0"
+                            Visibility="{Binding ShowSettingsButton, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ========================================
+             TOOLBAR SECTION - SEARCH AND FILTERS
+             ======================================== -->
+        <Border Grid.Row="1" 
+                Background="White" 
+                BorderBrush="#E9ECEF" 
+                BorderThickness="0,0,0,1"
+                Padding="30,15"
+                Visibility="{Binding ShowToolbar, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Visible}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Search Box -->
+                <TextBox Grid.Column="0" 
+                         x:Name="SearchBox"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource ModernTextBoxStyle}"
+                         Margin="0,0,15,0"
+                         TextChanged="SearchBox_TextChanged">
+                    <TextBox.ToolTip>
+                        <ToolTip Content="Search content..."/>
+                    </TextBox.ToolTip>
+                </TextBox>
+
+                <!-- Filter Button -->
+                <Button Grid.Column="1" 
+                        Content="FILTER" 
+                        Style="{StaticResource LightSecondaryButtonStyle}"
+                        Margin="0,0,15,0"
+                        Click="FilterButton_Click"
+                        Visibility="{Binding ShowFilterButton, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Visible}"/>
+
+                <!-- Sort Button -->
+                <Button Grid.Column="2" 
+                        Content="SORT BY" 
+                        Style="{StaticResource LightSecondaryButtonStyle}"
+                        Margin="0,0,15,0"
+                        Click="SortButton_Click"
+                        Visibility="{Binding ShowSortButton, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Visible}"/>
+
+                <!-- Add Button -->
+                <Button Grid.Column="3" 
+                        Content="+ ADD" 
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Click="AddButton_Click"
+                        Visibility="{Binding ShowAddButton, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"/>
+            </Grid>
+        </Border>
+
+        <!-- ========================================
+             CONTENT AREA - SCROLLABLE MAIN CONTENT
+             ======================================== -->
+        <ScrollViewer Grid.Row="2" 
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="20,30">
+            
+            <!-- Loading State -->
+            <Grid x:Name="LoadingGrid" 
+                  Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <ProgressBar IsIndeterminate="True" Width="200" Height="4" Margin="0,0,0,20"/>
+                    <TextBlock Text="Loading content..." 
+                               Style="{StaticResource BodyTextStyle}" 
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Error State -->
+            <Grid x:Name="ErrorGrid" 
+                  Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="⚠️" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                    <TextBlock Text="{Binding ErrorMessage, FallbackValue='An error occurred while loading content.'}" 
+                               Style="{StaticResource BodyTextStyle}" 
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap"
+                               MaxWidth="400"/>
+                    <Button Content="Retry" 
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Width="100"
+                            Margin="0,20,0,0"
+                            Click="RetryButton_Click"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Empty State -->
+            <Grid x:Name="EmptyGrid" 
+                  Visibility="{Binding IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="📭" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                    <TextBlock Text="{Binding EmptyMessage, FallbackValue='No content available.'}" 
+                               Style="{StaticResource BodyTextStyle}" 
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap"
+                               MaxWidth="400"/>
+                    <Button Content="Add Content" 
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Width="120"
+                            Margin="0,20,0,0"
+                            Click="AddButton_Click"
+                            Visibility="{Binding ShowAddButton, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Main Content -->
+            <ItemsControl x:Name="MainContentControl"
+                          ItemsSource="{Binding Items}"
+                          Visibility="{Binding HasContent, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Visible}">
+                
+                <!-- Layout Template - Configurable -->
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="{Binding GridColumns, FallbackValue=3}"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                
+                <!-- Item Template - Override in derived windows -->
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <!-- Default Card Template - Override as needed -->
+                        <Border Style="{StaticResource ModernCardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="140"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Preview Image -->
+                                <Border Grid.Row="0" 
+                                        Background="{StaticResource LightGray}" 
+                                        CornerRadius="8"
+                                        Margin="0,0,0,15"
+                                        BorderBrush="{StaticResource LightGrayDark}"
+                                        BorderThickness="1">
+                                    <Image x:Name="PreviewImage" 
+                                           Stretch="UniformToFill"
+                                           StretchDirection="Both"
+                                           Source="{Binding PreviewImageSource}"
+                                           Margin="8"/>
+                                </Border>
+
+                                <!-- Title -->
+                                <TextBlock Grid.Row="1" 
+                                           Text="{Binding Name}" 
+                                           Style="{StaticResource TitleTextStyle}"/>
+
+                                <!-- Description -->
+                                <TextBlock Grid.Row="2" 
+                                           Text="{Binding Description}" 
+                                           Style="{StaticResource BodyTextStyle}"
+                                           MaxHeight="60"/>
+
+                                <!-- Status Info -->
+                                <StackPanel Grid.Row="3" Margin="0,8">
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <Ellipse Style="{StaticResource StatusDotStyle}">
+                                            <Ellipse.Fill>
+                                                <SolidColorBrush Color="{Binding StatusColor, FallbackValue=#28A745}"/>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                        <TextBlock Text="{Binding StatusText, FallbackValue='Available'}" 
+                                                   Style="{StaticResource StatusTextStyle}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Action Buttons -->
+                                <StackPanel Grid.Row="4" 
+                                            Orientation="Vertical" 
+                                            HorizontalAlignment="Stretch"
+                                            Margin="0,15,0,0">
+                                    <Button Content="📄 View Details" 
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Click="ViewDetailsButton_Click"
+                                            Tag="{Binding}"/>
+                                    <Button Content="📂 Open" 
+                                            Style="{StaticResource PrimaryButtonStyle}"
+                                            Click="OpenButton_Click"
+                                            Tag="{Binding}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- ========================================
+             FOOTER SECTION - STATUS AND ACTIONS
+             ======================================== -->
+        <Border Grid.Row="3" 
+                Background="{StaticResource LightGray}" 
+                BorderBrush="{StaticResource BorderGray}" 
+                BorderThickness="0,1,0,0" 
+                Padding="30,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Status Information -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Ellipse Style="{StaticResource LargeStatusDotStyle}">
+                        <Ellipse.Fill>
+                            <SolidColorBrush Color="{Binding StatusColor, FallbackValue=#28A745}"/>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <TextBlock x:Name="StatusTextBlock"
+                               Text="{Binding StatusText, FallbackValue='Ready'}" 
+                               Style="{StaticResource StatusTextStyle}"/>
+                </StackPanel>
+
+                <!-- Footer Actions -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="HelpButton"
+                            Content="?" 
+                            Style="{StaticResource LightSecondaryButtonStyle}"
+                            Width="40"
+                            Margin="0,0,10,0"
+                            Click="HelpButton_Click"
+                            Visibility="{Binding ShowHelpButton, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"/>
+                    <Button x:Name="CloseButton"
+                            Content="✕ Close" 
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Width="80"
+                            Click="CloseButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Rooms Manager Add-in</Name>
+    <Assembly>RoomsManagerAddin.dll</Assembly>
+    <FullClassName>RoomsManagerAddin.App</FullClassName>
+    <ClientId>{8F7E6D5C-4B3A-2C1D-9E8F-7A6B5C4D3E2F}</ClientId>
+    <VendorId>ADSK</VendorId>
+    <VendorDescription>Aukett + Heese GmbH</VendorDescription>
+  </AddIn>
+</RevitAddIns>
+
+

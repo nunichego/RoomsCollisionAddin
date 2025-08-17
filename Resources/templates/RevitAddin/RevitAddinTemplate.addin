@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <!-- Main Application -->
+  <AddIn Type="Application">
+    <Name>RevitAddinTemplate</Name>
+    <Assembly>RevitAddinTemplate.dll</Assembly>
+    <FullClassName>RevitAddinTemplate.App</FullClassName>
+    <ClientId>{YOUR-GUID-HERE}</ClientId>
+    <VendorId>YOUR_VENDOR_ID</VendorId>
+    <VendorDescription>Your Company Name</VendorDescription>
+  </AddIn>
+
+  <!-- Commands -->
+  <AddIn Type="Command">
+    <Name>About Command</Name>
+    <Assembly>RevitAddinTemplate.dll</Assembly>
+    <FullClassName>RevitAddinTemplate.Commands.AboutCommand</FullClassName>
+    <ClientId>{YOUR-GUID-HERE}</ClientId>
+    <VendorId>YOUR_VENDOR_ID</VendorId>
+    <Text>About</Text>
+    <Description>Shows information about this add-in</Description>
+    <Discipline>Any</Discipline>
+    <VisibilityMode>AlwaysVisible</VisibilityMode>
+  </AddIn>
+
+  <AddIn Type="Command">
+    <Name>Admin Panel Command</Name>
+    <Assembly>RevitAddinTemplate.dll</Assembly>
+    <FullClassName>RevitAddinTemplate.Commands.AdminPanelCommand</FullClassName>
+    <ClientId>{YOUR-GUID-HERE}</ClientId>
+    <VendorId>YOUR_VENDOR_ID</VendorId>
+    <Text>Admin Panel</Text>
+    <Description>Opens the admin panel for configuration</Description>
+    <Discipline>Any</Discipline>
+    <VisibilityMode>AlwaysVisible</VisibilityMode>
+  </AddIn>
+
+  <AddIn Type="Command">
+    <Name>Content Files Command</Name>
+    <Assembly>RevitAddinTemplate.dll</Assembly>
+    <FullClassName>RevitAddinTemplate.Commands.ContentFilesCommand</FullClassName>
+    <ClientId>{YOUR-GUID-HERE}</ClientId>
+    <VendorId>YOUR_VENDOR_ID</VendorId>
+    <Text>Content Files</Text>
+    <Description>Manages content files and libraries</Description>
+    <Discipline>Any</Discipline>
+    <VisibilityMode>AlwaysVisible</VisibilityMode>
+  </AddIn>
+
+  <AddIn Type="Command">
+    <Name>Dynamo Scripts Command</Name>
+    <Assembly>RevitAddinTemplate.dll</Assembly>
+    <FullClassName>RevitAddinTemplate.Commands.DynamoScriptsCommand</FullClassName>
+    <ClientId>{YOUR-GUID-HERE}</ClientId>
+    <VendorId>YOUR_VENDOR_ID</VendorId>
+    <Text>Dynamo Scripts</Text>
+    <Description>Manages Dynamo scripts</Description>
+    <Discipline>Any</Discipline>
+    <VisibilityMode>AlwaysVisible</VisibilityMode>
+  </AddIn>
+
+  <AddIn Type="Command">
+    <Name>Help Command</Name>
+    <Assembly>RevitAddinTemplate.dll</Assembly>
+    <FullClassName>RevitAddinTemplate.Commands.HelpCommand</FullClassName>
+    <ClientId>{YOUR-GUID-HERE}</ClientId>
+    <VendorId>YOUR_VENDOR_ID</VendorId>
+    <Text>Help</Text>
+    <Description>Shows help information</Description>
+    <Discipline>Any</Discipline>
+    <VisibilityMode>AlwaysVisible</VisibilityMode>
+  </AddIn>
+
+  <AddIn Type="Command">
+    <Name>Settings Command</Name>
+    <Assembly>RevitAddinTemplate.dll</Assembly>
+    <FullClassName>RevitAddinTemplate.Commands.SettingsCommand</FullClassName>
+    <ClientId>{YOUR-GUID-HERE}</ClientId>
+    <VendorId>YOUR_VENDOR_ID</VendorId>
+    <Text>Settings</Text>
+    <Description>Opens the settings panel</Description>
+    <Discipline>Any</Discipline>
+    <VisibilityMode>AlwaysVisible</VisibilityMode>
+  </AddIn>
+
+</RevitAddIns>
