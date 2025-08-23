@@ -66,63 +66,63 @@ namespace RoomsManagerAddin.Services
         {
             try
             {
-                // Minimal per-room logging
-
-                // Preferred: accurate SEGC solid
+                // Try fast geometry extraction first (like old code)
                 try
                 {
-                    if (calculator == null)
+                    var options = new Options
                     {
-                        writeToLog?.Invoke($"    WARNING: Creating new SEGC for room {room.Id} - shared calculator is null!");
-                        var localCalculator = new SpatialElementGeometryCalculator(room.Document);
-                        var results = localCalculator.CalculateSpatialElementGeometry(room);
-                        var segcSolid = results?.GetGeometry();
-                        if (segcSolid != null && segcSolid.Volume > 0)
+                        ComputeReferences = true,
+                        DetailLevel = ViewDetailLevel.Fine
+                    };
+
+                    var geometryElement = room.get_Geometry(options);
+                    if (geometryElement != null)
+                    {
+                        foreach (var geomObject in geometryElement)
                         {
-                            return segcSolid;
+                            if (geomObject is Solid solid && solid.Volume > 0)
+                            {
+                                writeToLog?.Invoke($"    ✓ Fast geometry success for room {room.Id}");
+                                return solid; // Fast success!
+                            }
+                            else if (geomObject is GeometryInstance geomInstance)
+                            {
+                                var instanceGeometry = geomInstance.GetInstanceGeometry();
+                                foreach (var instanceGeom in instanceGeometry)
+                                {
+                                    if (instanceGeom is Solid instanceSolid && instanceSolid.Volume > 0)
+                                    {
+                                        writeToLog?.Invoke($"    ✓ Fast geometry success (instance) for room {room.Id}");
+                                        return instanceSolid; // Fast success!
+                                    }
+                                }
+                            }
                         }
                     }
-                    else
+                }
+                catch (Exception ex)
+                {
+                    writeToLog?.Invoke($"    ⚠ Fast geometry failed for room {room.Id}: {ex.Message}");
+                }
+
+                // Fallback: accurate but slow SEGC (only if fast method fails)
+                try
+                {
+                    if (calculator != null)
                     {
-                        // Use shared SEGC (optimal)
+                        writeToLog?.Invoke($"    → Falling back to SEGC for room {room.Id}");
                         var results = calculator.CalculateSpatialElementGeometry(room);
                         var segcSolid = results?.GetGeometry();
                         if (segcSolid != null && segcSolid.Volume > 0)
                         {
+                            writeToLog?.Invoke($"    ✓ SEGC fallback success for room {room.Id}");
                             return segcSolid;
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Fall back to legacy geometry below
-                }
-
-                // Fallback: legacy display geometry (fast, less robust)
-                var options = new Options { ComputeReferences = false, DetailLevel = ViewDetailLevel.Medium };
-                var geometryElement = room.get_Geometry(options);
-                if (geometryElement == null)
-                {
-                    return null;
-                }
-
-                foreach (var geomObject in geometryElement)
-                {
-                    if (geomObject is Solid solid && solid.Volume > 0)
-                    {
-                        return solid;
-                    }
-                    else if (geomObject is GeometryInstance geomInstance)
-                    {
-                        var instanceGeometry = geomInstance.GetInstanceGeometry();
-                        foreach (var instanceGeom in instanceGeometry)
-                        {
-                            if (instanceGeom is Solid instanceSolid && instanceSolid.Volume > 0)
-                            {
-                                return instanceSolid;
-                            }
-                        }
-                    }
+                    writeToLog?.Invoke($"    ✗ SEGC fallback failed for room {room.Id}: {ex.Message}");
                 }
 
                 return null;
