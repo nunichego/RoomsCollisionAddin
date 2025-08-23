@@ -18,6 +18,9 @@ namespace RoomsManagerAddin.Services
         private readonly ParameterUpdateService _parameterService;
         private readonly WallProcessingService _wallProcessingService;
         private readonly RoomProcessingService _roomProcessingService;
+        
+        // Cache unit conversion factor for performance
+        private double _cachedBufferInProjectUnits = -1;
 
         public CollisionAnalysisService(ILogger logger, GeometryService geometryService, ParameterUpdateService parameterService, WallProcessingService wallProcessingService, RoomProcessingService roomProcessingService)
         {
@@ -106,6 +109,7 @@ namespace RoomsManagerAddin.Services
             writeToLog("=== PHASE 3: PRE-PROCESSING ALL ROOM SOLIDS ===");
             showProgress("Pre-processing Rooms", "Creating room solids...", 0, rooms.Count, 15, 100);
             var sharedSegc = new SpatialElementGeometryCalculator(document);
+            writeToLog("✓ Created shared SpatialElementGeometryCalculator for reuse");
             
             var allRoomSolids = new Dictionary<Room, (Solid Original, List<Solid> Expanded, BoundingBoxXYZ BoundingBox)>();
             int roomPreprocessIndex = 0;
@@ -300,13 +304,27 @@ namespace RoomsManagerAddin.Services
                     var collidingRooms = wallData.Value;
                     var wallFilterTagValue = string.Join("; ", collidingRooms);
                     _parameterService.UpdateWallFilterTag(wall, wallFilterTagValue);
-                    writeToLog($"  Wall {wall.Id}: Updated Filter Tag with {collidingRooms.Count} rooms");
                 }
 
                 transaction.Commit();
             }
             
             return results;
+        }
+
+        /// <summary>
+        /// Get cached buffer value in project units (calculated once per analysis)
+        /// </summary>
+        private double GetBufferInProjectUnits(Document document)
+        {
+            if (_cachedBufferInProjectUnits < 0)
+            {
+                var bufferInFeet = 1.0 / 30.48; // 1 cm in feet
+                _cachedBufferInProjectUnits = UnitUtils.Convert(bufferInFeet, UnitTypeId.Feet, 
+                    document.GetUnits().GetFormatOptions(SpecTypeId.Length).GetUnitTypeId());
+                _logger?.LogDebug($"Cached unit conversion factor: {_cachedBufferInProjectUnits:F6}");
+            }
+            return _cachedBufferInProjectUnits;
         }
 
         /// <summary>
@@ -321,9 +339,8 @@ namespace RoomsManagerAddin.Services
             if (originalBoundingBox == null)
                 return null;
 
-            // Add a small buffer (1cm) in project units
-            var bufferInFeet = 1.0 / 30.48; // 1 cm in feet
-            var bufferInProjectUnits = UnitUtils.Convert(bufferInFeet, UnitTypeId.Feet, document.GetUnits().GetFormatOptions(SpecTypeId.Length).GetUnitTypeId());
+            // Add a small buffer (1cm) in project units - cached for performance
+            var bufferInProjectUnits = GetBufferInProjectUnits(document);
 
             var boundedBox = new BoundingBoxXYZ
             {

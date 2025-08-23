@@ -71,12 +71,26 @@ namespace RoomsManagerAddin.Services
                 // Preferred: accurate SEGC solid
                 try
                 {
-                    var localCalculator = calculator ?? new SpatialElementGeometryCalculator(room.Document);
-                    var results = localCalculator.CalculateSpatialElementGeometry(room);
-                    var segcSolid = results?.GetGeometry();
-                    if (segcSolid != null && segcSolid.Volume > 0)
+                    if (calculator == null)
                     {
-                        return segcSolid;
+                        writeToLog?.Invoke($"    WARNING: Creating new SEGC for room {room.Id} - shared calculator is null!");
+                        var localCalculator = new SpatialElementGeometryCalculator(room.Document);
+                        var results = localCalculator.CalculateSpatialElementGeometry(room);
+                        var segcSolid = results?.GetGeometry();
+                        if (segcSolid != null && segcSolid.Volume > 0)
+                        {
+                            return segcSolid;
+                        }
+                    }
+                    else
+                    {
+                        // Use shared SEGC (optimal)
+                        var results = calculator.CalculateSpatialElementGeometry(room);
+                        var segcSolid = results?.GetGeometry();
+                        if (segcSolid != null && segcSolid.Volume > 0)
+                        {
+                            return segcSolid;
+                        }
                     }
                 }
                 catch
