@@ -186,11 +186,12 @@ namespace RoomsManagerAddin.Services
                         var collidingWalls = new List<Wall>();
                         var wallTypes = new HashSet<string>();
 
-                        // Check all walls using bounding box pre-filtering
-                        writeToLog($"  Checking {allWallSolids.Count} walls...");
-                        int wallCheckIndex = 0;
-                        int boundingBoxHits = 0;
-                        int solidIntersectionTests = 0;
+                                                 // Check all walls using optimized filtering (Z-axis -> BoundingBox -> Solid)
+                         writeToLog($"  Checking {allWallSolids.Count} walls...");
+                         int wallCheckIndex = 0;
+                         int zAxisHits = 0;
+                         int boundingBoxHits = 0;
+                         int solidIntersectionTests = 0;
                         
                                                // DEBUG: Examine wall solids and their bounding boxes
                        var firstFewWalls = allWallSolids.Take(5).ToList();
@@ -214,71 +215,84 @@ namespace RoomsManagerAddin.Services
                            writeToLog($"      Solid Dimensions: Width={solidWidth:F3}, Height={solidHeight:F3}, Depth={solidDepth:F3}");
                        }
                         
-                        foreach (var wallSolidData in allWallSolids)
-                        {
-                            var wall = wallSolidData.Key;
-                            var wallSolid = wallSolidData.Value;
-                            var wallBoundingBox = wallBoundingBoxes[wall];
-                            
-                            wallCheckIndex++;
-                            if (wallCheckIndex % 100 == 0) // Update progress every 100 walls
-                            {
-                                showProgress("Analyzing Rooms", $"Checking walls for room {room.Number} ({wallCheckIndex}/{allWallSolids.Count})", 
-                                            wallCheckIndex, allWallSolids.Count, 15 + (int)((double)roomIndex / rooms.Count * 60), 100);
-                            }
-                            
-                            try
-                            {
-                                // Fast bounding box check first
-                                bool boundingBoxIntersects = BoundingBoxesIntersect(roomBoundingBox, wallBoundingBox);
-                                
-                                // DEBUG: Log first few intersection checks
-                                if (wallCheckIndex <= 5)
-                                {
-                                    writeToLog($"    *** DEBUG: Wall {wall.Id} intersection check: {boundingBoxIntersects}");
-                                }
-                                
-                                if (boundingBoxIntersects)
-                                {
-                                    boundingBoxHits++;
-                                    
-                                    // Only do expensive solid intersection if bounding boxes overlap
-                                    bool hasCollision = false;
-                                    foreach (var expandedSolid in expandedRoomSolids)
-                                    {
-                                        solidIntersectionTests++;
-                                        if (_geometryService.SolidsIntersect(expandedSolid, wallSolid))
-                                        {
-                                            hasCollision = true;
-                                            break;
-                                        }
-                                    }
-                                    
-                                                                       if (hasCollision)
-                                   {
-                                       collidingWalls.Add(wall);
-                                       var wallType = wall.WallType?.Name ?? "Unknown";
-                                       wallTypes.Add(wallType);
+                                                 foreach (var wallSolidData in allWallSolids)
+                         {
+                             var wall = wallSolidData.Key;
+                             var wallSolid = wallSolidData.Value;
+                             var wallBoundingBox = wallBoundingBoxes[wall];
+                             
+                             wallCheckIndex++;
+                             if (wallCheckIndex % 100 == 0) // Update progress every 100 walls
+                             {
+                                 showProgress("Analyzing Rooms", $"Checking walls for room {room.Number} ({wallCheckIndex}/{allWallSolids.Count})", 
+                                             wallCheckIndex, allWallSolids.Count, 15 + (int)((double)roomIndex / rooms.Count * 60), 100);
+                             }
+                             
+                             try
+                             {
+                                 // 1. FASTEST: Z-axis check first (walls on different levels)
+                                 bool zAxisIntersects = (roomBoundingBox.Min.Z <= wallBoundingBox.Max.Z && 
+                                                        roomBoundingBox.Max.Z >= wallBoundingBox.Min.Z);
+                                 
+                                 if (!zAxisIntersects)
+                                 {
+                                     // Wall is completely above or below room - skip immediately
+                                     continue;
+                                 }
+                                 
+                                 zAxisHits++;
+                                 
+                                 // 2. SECOND FASTEST: X,Y bounding box check
+                                 bool boundingBoxIntersects = BoundingBoxesIntersect(roomBoundingBox, wallBoundingBox);
+                                 
+                                 // DEBUG: Log first few intersection checks
+                                 if (wallCheckIndex <= 5)
+                                 {
+                                     writeToLog($"    *** DEBUG: Wall {wall.Id} - Z-axis: {zAxisIntersects}, BoundingBox: {boundingBoxIntersects}");
+                                 }
+                                 
+                                 if (boundingBoxIntersects)
+                                 {
+                                     boundingBoxHits++;
+                                     
+                                     // 3. MOST EXPENSIVE: Solid-solid intersection (only if both fast checks pass)
+                                     bool hasCollision = false;
+                                     foreach (var expandedSolid in expandedRoomSolids)
+                                     {
+                                         solidIntersectionTests++;
+                                         if (_geometryService.SolidsIntersect(expandedSolid, wallSolid))
+                                         {
+                                             hasCollision = true;
+                                             break;
+                                         }
+                                     }
+                                     
+                                     if (hasCollision)
+                                     {
+                                         collidingWalls.Add(wall);
+                                         var wallType = wall.WallType?.Name ?? "Unknown";
+                                         wallTypes.Add(wallType);
 
-                                       // Track this collision for wall parameter update
-                                       if (!wallCollisionData.ContainsKey(wall))
-                                       {
-                                           wallCollisionData[wall] = new List<string>();
-                                       }
-                                       wallCollisionData[wall].Add($"{room.Number} - {room.Name}");
-                                   }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                writeToLog($"    Error checking wall collision: {ex.Message}");
-                            }
-                        }
+                                         // Track this collision for wall parameter update
+                                         if (!wallCollisionData.ContainsKey(wall))
+                                         {
+                                             wallCollisionData[wall] = new List<string>();
+                                         }
+                                         wallCollisionData[wall].Add($"{room.Number} - {room.Name}");
+                                     }
+                                 }
+                             }
+                             catch (Exception ex)
+                             {
+                                 writeToLog($"    Error checking wall collision: {ex.Message}");
+                             }
+                         }
                         
 
-                        writeToLog($"    Bounding box hits: {boundingBoxHits}/{allWallSolids.Count} ({(double)boundingBoxHits / allWallSolids.Count * 100:F1}%)");
-                        writeToLog($"    Solid intersection tests: {solidIntersectionTests}");
-                        writeToLog($"    Actual collisions: {collidingWalls.Count} ({(boundingBoxHits > 0 ? (double)collidingWalls.Count / boundingBoxHits * 100 : 0):F1}% precision)");
+                                                 writeToLog($"    Z-axis hits: {zAxisHits}/{allWallSolids.Count} ({(double)zAxisHits / allWallSolids.Count * 100:F1}%)");
+                         writeToLog($"    Bounding box hits: {boundingBoxHits}/{zAxisHits} ({(zAxisHits > 0 ? (double)boundingBoxHits / zAxisHits * 100 : 0):F1}%)");
+                         writeToLog($"    Solid intersection tests: {solidIntersectionTests}");
+                         writeToLog($"    Actual collisions: {collidingWalls.Count} ({(boundingBoxHits > 0 ? (double)collidingWalls.Count / boundingBoxHits * 100 : 0):F1}% precision)");
 
                         result.WallsColliding = collidingWalls.Count;
                         result.WallTypes = wallTypes.ToList();
