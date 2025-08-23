@@ -34,22 +34,15 @@ namespace RoomsManagerAddin.Services
                 {
                     if (wall.WallType.Kind == WallKind.Curtain)
                     {
-                        writeToLog?.Invoke($"Processing curtain wall: {wall.Id} ({wall.WallType.Name})");
                         var curtainSolid = CreateCurtainWallSolid(wall, writeToLog);
                         if (curtainSolid != null)
                         {
                             result.CurtainWallSolids[wall] = curtainSolid;
-                            writeToLog?.Invoke($"  ✓ Created curtain wall solid: Volume={curtainSolid.Volume:F2}");
-                        }
-                        else
-                        {
-                            writeToLog?.Invoke($"  ✗ Failed to create curtain wall solid");
                         }
                     }
                     else
                     {
                         result.RegularWalls.Add(wall);
-                        writeToLog?.Invoke($"Regular wall: {wall.Id} ({wall.WallType.Name})");
                     }
                 }
                 catch (Exception ex)
@@ -73,7 +66,7 @@ namespace RoomsManagerAddin.Services
         {
             try
             {
-                writeToLog?.Invoke($"  Getting solid for regular wall: {wall.Id}");
+                // Minimal per-wall logging
                 
                 // First, try to get the solid using standard geometry extraction
                 var standardSolid = GetStandardWallSolid(wall, writeToLog);
@@ -83,7 +76,7 @@ namespace RoomsManagerAddin.Services
                 }
 
                 // If standard extraction fails, create solid from wall location line
-                writeToLog?.Invoke($"    Standard geometry extraction failed, creating solid from location line...");
+                // Fallback to location-based solid
                 return CreateRegularWallSolidFromLocation(wall, writeToLog);
             }
             catch (Exception ex)
@@ -110,7 +103,7 @@ namespace RoomsManagerAddin.Services
                 var geometryElement = wall.get_Geometry(options);
                 if (geometryElement == null)
                 {
-                    writeToLog?.Invoke($"    ✗ No geometry found for wall {wall.Id}");
+                    // No geometry found
                     return null;
                 }
 
@@ -118,25 +111,25 @@ namespace RoomsManagerAddin.Services
                 {
                     if (geomObject is Solid solid && solid.Volume > 0)
                     {
-                        writeToLog?.Invoke($"    Standard solid: Volume={solid.Volume:F2}, Faces={solid.Faces.Size}");
+                        // Found standard solid
                         return solid;
                     }
                     else if (geomObject is GeometryInstance geomInstance)
                     {
-                        writeToLog?.Invoke($"    Found GeometryInstance, checking instance geometry...");
+                        // Found GeometryInstance
                         var instanceGeometry = geomInstance.GetInstanceGeometry();
                         foreach (var instanceGeom in instanceGeometry)
                         {
                             if (instanceGeom is Solid instanceSolid && instanceSolid.Volume > 0)
                             {
-                                writeToLog?.Invoke($"    Instance solid: Volume={instanceSolid.Volume:F2}, Faces={instanceSolid.Faces.Size}");
+                                // Found instance solid
                                 return instanceSolid;
                             }
                         }
                     }
                 }
 
-                writeToLog?.Invoke($"    ✗ No valid standard solid found for wall {wall.Id}");
+                // No valid standard solid
                 return null;
             }
             catch (Exception ex)
@@ -153,38 +146,37 @@ namespace RoomsManagerAddin.Services
         {
             try
             {
-                writeToLog?.Invoke($"    Creating solid from location line for wall: {wall.Id}");
+                // Creating solid from location line
                 
                 // Get the wall's location line
                 var locationCurve = wall.Location as LocationCurve;
                 if (locationCurve == null || locationCurve.Curve == null)
                 {
-                    writeToLog?.Invoke($"      ✗ No location curve found for wall: {wall.Id}");
+                    // No location curve
                     return null;
                 }
 
                 var curve = locationCurve.Curve;
-                writeToLog?.Invoke($"      Curve type: {curve.GetType().Name}, Length: {curve.Length:F2}");
+                // Curve info
 
                 // Get wall parameters
                 var wallHeight = wall.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM)?.AsDouble() ?? 10.0;
                 var wallWidth = wall.WallType.Width;
-                var wallThickness = wallWidth; // Use wall type width as thickness
+                var wallThickness = wallWidth; // wall thickness
 
-                writeToLog?.Invoke($"      Wall height: {wallHeight:F2}, Width: {wallWidth:F2}");
+                // Wall dims
 
                 // Create a rectangular profile from the wall location line
                 var profile = CreateRectangularProfileFromCurve(curve, wallHeight, wallThickness, writeToLog);
                 if (profile == null)
                 {
-                    writeToLog?.Invoke($"      ✗ Failed to create profile for wall: {wall.Id}");
                     return null;
                 }
 
                 // Create solid by extruding the profile
                 var solid = GeometryCreationUtilities.CreateExtrusionGeometry(new List<CurveLoop> { profile }, XYZ.BasisZ, wallHeight);
                 
-                writeToLog?.Invoke($"      Location-based solid: Volume={solid.Volume:F2}, Faces={solid.Faces.Size}");
+                // Created location-based solid
                 return solid;
             }
             catch (Exception ex)
@@ -202,8 +194,6 @@ namespace RoomsManagerAddin.Services
         {
             try
             {
-                writeToLog?.Invoke($"        Creating rectangular profile from curve...");
-                
                 // Get curve direction and perpendicular direction
                 var curveDirection = curve.GetEndPoint(1) - curve.GetEndPoint(0);
                 curveDirection = curveDirection.Normalize();
@@ -220,7 +210,7 @@ namespace RoomsManagerAddin.Services
                 var p3 = endPoint - perpendicular * halfThickness;
                 var p4 = endPoint + perpendicular * halfThickness;
 
-                writeToLog?.Invoke($"        Profile points: P1({p1.X:F2},{p1.Y:F2},{p1.Z:F2}) -> P4({p4.X:F2},{p4.Y:F2},{p4.Z:F2})");
+
 
                 // Create the rectangular loop
                 var profile = new CurveLoop();
@@ -229,7 +219,7 @@ namespace RoomsManagerAddin.Services
                 profile.Append(Line.CreateBound(p3, p4));
                 profile.Append(Line.CreateBound(p4, p1));
 
-                writeToLog?.Invoke($"        ✓ Profile created successfully");
+
                 return profile;
             }
             catch (Exception ex)
@@ -246,7 +236,7 @@ namespace RoomsManagerAddin.Services
         {
             try
             {
-                writeToLog?.Invoke($"    Creating curtain wall solid for: {wall.Id}");
+
                 
                 // Get the wall's location line
                 var locationCurve = wall.Location as LocationCurve;
@@ -257,13 +247,13 @@ namespace RoomsManagerAddin.Services
                 }
 
                 var curve = locationCurve.Curve;
-                writeToLog?.Invoke($"      Curve type: {curve.GetType().Name}, Length: {curve.Length:F2}");
+
 
                 // Get wall height and thickness
                 var wallHeight = wall.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM)?.AsDouble() ?? 10.0;
                 var wallThickness = 0.02; // 2cm thickness for curtain wall solid
 
-                writeToLog?.Invoke($"      Wall height: {wallHeight:F2}, Thickness: {wallThickness:F2}");
+
 
                 // Create a simple rectangular profile
                 var profile = CreateRectangularProfile(curve, wallHeight, wallThickness, writeToLog);
@@ -276,7 +266,7 @@ namespace RoomsManagerAddin.Services
                 // Create solid by extruding the profile
                 var solid = GeometryCreationUtilities.CreateExtrusionGeometry(new List<CurveLoop> { profile }, XYZ.BasisZ, wallHeight);
                 
-                writeToLog?.Invoke($"      ✓ Created curtain wall solid: Volume={solid.Volume:F2}, Faces={solid.Faces.Size}");
+
                 return solid;
             }
             catch (Exception ex)
@@ -294,7 +284,7 @@ namespace RoomsManagerAddin.Services
         {
             try
             {
-                writeToLog?.Invoke($"        Creating rectangular profile...");
+
                 
                 // Get curve direction and perpendicular direction
                 var curveDirection = curve.GetEndPoint(1) - curve.GetEndPoint(0);
@@ -312,7 +302,7 @@ namespace RoomsManagerAddin.Services
                 var p3 = endPoint - perpendicular * halfThickness;
                 var p4 = endPoint + perpendicular * halfThickness;
 
-                writeToLog?.Invoke($"        Profile points: P1({p1.X:F2},{p1.Y:F2},{p1.Z:F2}) -> P4({p4.X:F2},{p4.Y:F2},{p4.Z:F2})");
+
 
                 // Create the rectangular loop
                 var profile = new CurveLoop();
@@ -321,7 +311,7 @@ namespace RoomsManagerAddin.Services
                 profile.Append(Line.CreateBound(p3, p4));
                 profile.Append(Line.CreateBound(p4, p1));
 
-                writeToLog?.Invoke($"        ✓ Profile created successfully");
+
                 return profile;
             }
             catch (Exception ex)

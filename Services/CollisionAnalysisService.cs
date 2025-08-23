@@ -91,24 +91,21 @@ namespace RoomsManagerAddin.Services
                 }
                 
                 var wall = wallSolidData.Key;
-                var wallSolid = wallSolidData.Value;
-                wallBoundingBoxes[wall] = wallSolid.GetBoundingBox();
+                var elementBox = wall.get_BoundingBox(null);
+                if (elementBox != null)
+                {
+                    wallBoundingBoxes[wall] = elementBox;
+                }
             }
             
             writeToLog($"✓ Pre-calculated {wallBoundingBoxes.Count} wall bounding boxes");
             
-            // Log some bounding box statistics for debugging
-            var wallBoundingBoxSizes = wallBoundingBoxes.Values.Select(bbox => 
-                Math.Sqrt(Math.Pow(bbox.Max.X - bbox.Min.X, 2) + 
-                         Math.Pow(bbox.Max.Y - bbox.Min.Y, 2) + 
-                         Math.Pow(bbox.Max.Z - bbox.Min.Z, 2))).ToList();
-            
-            writeToLog($"Wall bounding box statistics: Min size={wallBoundingBoxSizes.Min():F2}, Max size={wallBoundingBoxSizes.Max():F2}, Avg size={wallBoundingBoxSizes.Average():F2}");
             writeToLog("");
             
             // PHASE 3 OPTIMIZATION: Pre-process all room solids
             writeToLog("=== PHASE 3: PRE-PROCESSING ALL ROOM SOLIDS ===");
             showProgress("Pre-processing Rooms", "Creating room solids...", 0, rooms.Count, 15, 100);
+            var sharedSegc = new SpatialElementGeometryCalculator(document);
             
             var allRoomSolids = new Dictionary<Room, (Solid Original, List<Solid> Expanded, BoundingBoxXYZ BoundingBox)>();
             int roomPreprocessIndex = 0;
@@ -123,16 +120,11 @@ namespace RoomsManagerAddin.Services
                 
                 try
                 {
-                    var roomSolid = _roomProcessingService.GetRoomSolid(room, writeToLog);
+                    var roomSolid = _roomProcessingService.GetRoomSolid(room, sharedSegc, writeToLog);
                     if (roomSolid != null)
                     {
-                        // DEBUG: Log the original room solid bounding box
-                        var originalBoundingBox = roomSolid.GetBoundingBox();
-                        writeToLog($"  *** DEBUG: Room {room.Number} original bounding box: Min({originalBoundingBox.Min.X:F3},{originalBoundingBox.Min.Y:F3},{originalBoundingBox.Min.Z:F3}) Max({originalBoundingBox.Max.X:F3},{originalBoundingBox.Max.Y:F3},{originalBoundingBox.Max.Z:F3})");
-                        writeToLog($"  *** DEBUG: Room {room.Number} original size: {Math.Sqrt(Math.Pow(originalBoundingBox.Max.X - originalBoundingBox.Min.X, 2) + Math.Pow(originalBoundingBox.Max.Y - originalBoundingBox.Min.Y, 2) + Math.Pow(originalBoundingBox.Max.Z - originalBoundingBox.Min.Z, 2)):F3} units");
-                        
                         var expandedSolids = _roomProcessingService.CreateExpandedRoomSolids(roomSolid, writeToLog);
-                        var roomBoundingBox = CalculateRoomBoundingBox(roomSolid, document, writeToLog);
+                        var roomBoundingBox = CalculateRoomBoundingBox(room, document, writeToLog);
                         allRoomSolids[room] = (roomSolid, expandedSolids, roomBoundingBox);
                     }
                 }
@@ -180,40 +172,20 @@ namespace RoomsManagerAddin.Services
                         
                         result.RoomSolidVolume = roomSolid.Volume;
                         result.RoomSolidFaces = roomSolid.Faces.Size;
-                                               writeToLog($"  Room solid: Volume={roomSolid.Volume:F1}, Faces={roomSolid.Faces.Size}, Expanded solids={expandedRoomSolids.Count}");
+
 
                         // Check wall collisions using bounding box pre-filtering
                         var collidingWalls = new List<Wall>();
                         var wallTypes = new HashSet<string>();
 
                                                  // Check all walls using optimized filtering (Z-axis -> BoundingBox -> Solid)
-                         writeToLog($"  Checking {allWallSolids.Count} walls...");
+                        // Minimal logging for wall checks
                          int wallCheckIndex = 0;
                          int zAxisHits = 0;
                          int boundingBoxHits = 0;
                          int solidIntersectionTests = 0;
                         
-                                               // DEBUG: Examine wall solids and their bounding boxes
-                       var firstFewWalls = allWallSolids.Take(5).ToList();
-                       writeToLog($"  *** DEBUG: Examining first 5 wall solids:");
-                       foreach (var wallData in firstFewWalls)
-                       {
-                           var wall = wallData.Key;
-                           var wallSolid = wallData.Value;
-                           var wallBoundingBox = wallBoundingBoxes[wall];
-                           
-                           writeToLog($"    *** Wall {wall.Id}:");
-                           writeToLog($"      Solid Volume: {wallSolid.Volume:F2}, Faces: {wallSolid.Faces.Size}");
-                           writeToLog($"      Solid BoundingBox: Min({wallSolid.GetBoundingBox().Min.X:F3},{wallSolid.GetBoundingBox().Min.Y:F3},{wallSolid.GetBoundingBox().Min.Z:F3}) Max({wallSolid.GetBoundingBox().Max.X:F3},{wallSolid.GetBoundingBox().Max.Y:F3},{wallSolid.GetBoundingBox().Max.Z:F3})");
-                           writeToLog($"      Stored BoundingBox: Min({wallBoundingBox.Min.X:F3},{wallBoundingBox.Min.Y:F3},{wallBoundingBox.Min.Z:F3}) Max({wallBoundingBox.Max.X:F3},{wallBoundingBox.Max.Y:F3},{wallBoundingBox.Max.Z:F3})");
-                           
-                           // Calculate dimensions
-                           var solidBox = wallSolid.GetBoundingBox();
-                           var solidWidth = solidBox.Max.X - solidBox.Min.X;
-                           var solidHeight = solidBox.Max.Y - solidBox.Min.Y;
-                           var solidDepth = solidBox.Max.Z - solidBox.Min.Z;
-                           writeToLog($"      Solid Dimensions: Width={solidWidth:F3}, Height={solidHeight:F3}, Depth={solidDepth:F3}");
-                       }
+
                         
                                                  foreach (var wallSolidData in allWallSolids)
                          {
@@ -245,11 +217,7 @@ namespace RoomsManagerAddin.Services
                                  // 2. SECOND FASTEST: X,Y bounding box check
                                  bool boundingBoxIntersects = BoundingBoxesIntersect(roomBoundingBox, wallBoundingBox);
                                  
-                                 // DEBUG: Log first few intersection checks
-                                 if (wallCheckIndex <= 5)
-                                 {
-                                     writeToLog($"    *** DEBUG: Wall {wall.Id} - Z-axis: {zAxisIntersects}, BoundingBox: {boundingBoxIntersects}");
-                                 }
+                                // Skip per-wall debug details
                                  
                                  if (boundingBoxIntersects)
                                  {
@@ -292,7 +260,7 @@ namespace RoomsManagerAddin.Services
                                                  writeToLog($"    Z-axis hits: {zAxisHits}/{allWallSolids.Count} ({(double)zAxisHits / allWallSolids.Count * 100:F1}%)");
                          writeToLog($"    Bounding box hits: {boundingBoxHits}/{zAxisHits} ({(zAxisHits > 0 ? (double)boundingBoxHits / zAxisHits * 100 : 0):F1}%)");
                          writeToLog($"    Solid intersection tests: {solidIntersectionTests}");
-                         writeToLog($"    Actual collisions: {collidingWalls.Count} ({(boundingBoxHits > 0 ? (double)collidingWalls.Count / boundingBoxHits * 100 : 0):F1}% precision)");
+                         writeToLog($"    Actual collisions: {collidingWalls.Count}");
 
                         result.WallsColliding = collidingWalls.Count;
                         result.WallTypes = wallTypes.ToList();
@@ -342,41 +310,21 @@ namespace RoomsManagerAddin.Services
         }
 
         /// <summary>
-        /// Calculate bounding box from original room solid with proper unit conversion
+        /// Calculate room bounding box from the Room element with a small buffer
         /// </summary>
-        private BoundingBoxXYZ CalculateRoomBoundingBox(Solid roomSolid, Document document, Action<string> writeToLog = null)
+        private BoundingBoxXYZ CalculateRoomBoundingBox(Room room, Document document, Action<string> writeToLog = null)
         {
-            if (roomSolid == null)
+            if (room == null)
                 return null;
 
-            var originalBoundingBox = roomSolid.GetBoundingBox();
-            
-            // DEBUG: Log the original bounding box details
-            writeToLog?.Invoke($"    *** DEBUG: Original room solid bounding box: Min({originalBoundingBox.Min.X:F3},{originalBoundingBox.Min.Y:F3},{originalBoundingBox.Min.Z:F3}) Max({originalBoundingBox.Max.X:F3},{originalBoundingBox.Max.Y:F3},{originalBoundingBox.Max.Z:F3})");
-            writeToLog?.Invoke($"    *** DEBUG: Original room solid size: {Math.Sqrt(Math.Pow(originalBoundingBox.Max.X - originalBoundingBox.Min.X, 2) + Math.Pow(originalBoundingBox.Max.Y - originalBoundingBox.Min.Y, 2) + Math.Pow(originalBoundingBox.Max.Z - originalBoundingBox.Min.Z, 2)):F3} units");
-            
-            // Convert 0.5cm to project units (Revit internal units are feet)
-            // 0.5cm = 0.5 / 30.48 feet ≈ 0.0164 feet
-            var offsetInFeet = 0.5 / 30.48; // Convert cm to feet
-            var offsetInProjectUnits = UnitUtils.Convert(offsetInFeet, UnitTypeId.Feet, document.GetUnits().GetFormatOptions(SpecTypeId.Length).GetUnitTypeId());
-            
-            // Calculate center point of the bounding box
-            var centerX = (originalBoundingBox.Min.X + originalBoundingBox.Max.X) / 2.0;
-            var centerY = (originalBoundingBox.Min.Y + originalBoundingBox.Max.Y) / 2.0;
-            var centerZ = (originalBoundingBox.Min.Z + originalBoundingBox.Max.Z) / 2.0;
-            
-            // Calculate half dimensions
-            var halfWidth = (originalBoundingBox.Max.X - originalBoundingBox.Min.X) / 2.0;
-            var halfHeight = (originalBoundingBox.Max.Y - originalBoundingBox.Min.Y) / 2.0;
-            var halfDepth = (originalBoundingBox.Max.Z - originalBoundingBox.Min.Z) / 2.0;
-            
-            // Add a small buffer (1cm in project units) to account for the expanded solids
-            var bufferInFeet = 1.0 / 30.48; // 1cm in feet
+            var originalBoundingBox = room.get_BoundingBox(null);
+            if (originalBoundingBox == null)
+                return null;
+
+            // Add a small buffer (1cm) in project units
+            var bufferInFeet = 1.0 / 30.48; // 1 cm in feet
             var bufferInProjectUnits = UnitUtils.Convert(bufferInFeet, UnitTypeId.Feet, document.GetUnits().GetFormatOptions(SpecTypeId.Length).GetUnitTypeId());
-            
-            writeToLog?.Invoke($"    *** DEBUG: Buffer in project units: {bufferInProjectUnits:F6}");
-            
-            // Create bounding box with small buffer
+
             var boundedBox = new BoundingBoxXYZ
             {
                 Min = new XYZ(
@@ -390,10 +338,7 @@ namespace RoomsManagerAddin.Services
                     originalBoundingBox.Max.Z + bufferInProjectUnits
                 )
             };
-            
-            writeToLog?.Invoke($"    *** DEBUG: Final bounding box: Min({boundedBox.Min.X:F3},{boundedBox.Min.Y:F3},{boundedBox.Min.Z:F3}) Max({boundedBox.Max.X:F3},{boundedBox.Max.Y:F3},{boundedBox.Max.Z:F3})");
-            writeToLog?.Invoke($"    *** DEBUG: Final bounding box size: {Math.Sqrt(Math.Pow(boundedBox.Max.X - boundedBox.Min.X, 2) + Math.Pow(boundedBox.Max.Y - boundedBox.Min.Y, 2) + Math.Pow(boundedBox.Max.Z - boundedBox.Min.Z, 2)):F3} units");
-            
+
             return boundedBox;
         }
 

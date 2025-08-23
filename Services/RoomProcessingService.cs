@@ -33,18 +33,14 @@ namespace RoomsManagerAddin.Services
             {
                 try
                 {
-                    writeToLog?.Invoke($"Processing room: {room.Id} ({room.Number} - {room.Name})");
-                    
                     var roomSolid = GetRoomSolid(room, writeToLog);
                     if (roomSolid != null)
                     {
                         result.SuccessfulRooms[room] = roomSolid;
-                        writeToLog?.Invoke($"  ✓ Created room solid: Volume={roomSolid.Volume:F2}, Faces={roomSolid.Faces.Size}");
                     }
                     else
                     {
                         result.FailedRooms.Add(room);
-                        writeToLog?.Invoke($"  ✗ Failed to create room solid");
                     }
                 }
                 catch (Exception ex)
@@ -63,24 +59,36 @@ namespace RoomsManagerAddin.Services
         }
 
         /// <summary>
-        /// Get solid geometry from a room
+        /// Get solid geometry from a room. If a SpatialElementGeometryCalculator is provided,
+        /// reuse it for performance; otherwise falls back to legacy display geometry.
         /// </summary>
-        public Solid GetRoomSolid(Room room, Action<string> writeToLog = null)
+        public Solid GetRoomSolid(Room room, SpatialElementGeometryCalculator calculator, Action<string> writeToLog = null)
         {
             try
             {
-                writeToLog?.Invoke($"  Getting solid for room: {room.Id}");
-                
-                var options = new Options
-                {
-                    ComputeReferences = true,
-                    DetailLevel = ViewDetailLevel.Fine
-                };
+                // Minimal per-room logging
 
+                // Preferred: accurate SEGC solid
+                try
+                {
+                    var localCalculator = calculator ?? new SpatialElementGeometryCalculator(room.Document);
+                    var results = localCalculator.CalculateSpatialElementGeometry(room);
+                    var segcSolid = results?.GetGeometry();
+                    if (segcSolid != null && segcSolid.Volume > 0)
+                    {
+                        return segcSolid;
+                    }
+                }
+                catch
+                {
+                    // Fall back to legacy geometry below
+                }
+
+                // Fallback: legacy display geometry (fast, less robust)
+                var options = new Options { ComputeReferences = false, DetailLevel = ViewDetailLevel.Medium };
                 var geometryElement = room.get_Geometry(options);
                 if (geometryElement == null)
                 {
-                    writeToLog?.Invoke($"    ✗ No geometry found for room {room.Id}");
                     return null;
                 }
 
@@ -88,25 +96,21 @@ namespace RoomsManagerAddin.Services
                 {
                     if (geomObject is Solid solid && solid.Volume > 0)
                     {
-                        writeToLog?.Invoke($"    ✓ Found solid: Volume={solid.Volume:F2}, Faces={solid.Faces.Size}");
                         return solid;
                     }
                     else if (geomObject is GeometryInstance geomInstance)
                     {
-                        writeToLog?.Invoke($"    Found GeometryInstance, checking instance geometry...");
                         var instanceGeometry = geomInstance.GetInstanceGeometry();
                         foreach (var instanceGeom in instanceGeometry)
                         {
                             if (instanceGeom is Solid instanceSolid && instanceSolid.Volume > 0)
                             {
-                                writeToLog?.Invoke($"    ✓ Found instance solid: Volume={instanceSolid.Volume:F2}, Faces={instanceSolid.Faces.Size}");
                                 return instanceSolid;
                             }
                         }
                     }
                 }
 
-                writeToLog?.Invoke($"    ✗ No valid solid found for room {room.Id}");
                 return null;
             }
             catch (Exception ex)
@@ -115,6 +119,12 @@ namespace RoomsManagerAddin.Services
                 _logger?.LogError(ex, $"Error getting solid for room: {room.Id}");
                 return null;
             }
+        }
+
+        // Back-compat overload
+        public Solid GetRoomSolid(Room room, Action<string> writeToLog = null)
+        {
+            return GetRoomSolid(room, null, writeToLog);
         }
 
         /// <summary>
@@ -145,7 +155,7 @@ namespace RoomsManagerAddin.Services
                    }
                }
                
-               writeToLog?.Invoke($"    Created {expandedSolids.Count} expanded solids");
+               // Minimal logging
                 
                 return expandedSolids;
             }
@@ -167,7 +177,7 @@ namespace RoomsManagerAddin.Services
                 var translation = Transform.CreateTranslation(direction * offsetDistance);
                 var offsetSolid = SolidUtils.CreateTransformed(originalSolid, translation);
                 
-                writeToLog?.Invoke($"      Created offset solid in direction {direction}: Volume={offsetSolid.Volume:F2}");
+                // Minimal logging
                 return offsetSolid;
             }
             catch (Exception ex)
@@ -192,8 +202,6 @@ namespace RoomsManagerAddin.Services
             {
                 var roomStopwatch = Stopwatch.StartNew();
                 
-                writeToLog?.Invoke($"--- Testing Room: {room.Id} ({room.Number} - {room.Name}) ---");
-                
                 // Test basic solid creation
                 var solid = GetRoomSolid(room, writeToLog);
                 roomStopwatch.Stop();
@@ -201,24 +209,20 @@ namespace RoomsManagerAddin.Services
                 if (solid != null)
                 {
                     result.SuccessfulRooms++;
-                    writeToLog?.Invoke($"✓ SUCCESS: Room {room.Id} - Volume: {solid.Volume:F2}, Faces: {solid.Faces.Size}, Time: {roomStopwatch.ElapsedMilliseconds}ms");
                     
                     // Test expanded solids creation
                     var expandedStopwatch = Stopwatch.StartNew();
                     var expandedSolids = CreateExpandedRoomSolids(solid, writeToLog);
                     expandedStopwatch.Stop();
                     
-                    writeToLog?.Invoke($"  Expanded solids: {expandedSolids.Count} solids created in {expandedStopwatch.ElapsedMilliseconds}ms");
                     result.TotalExpandedSolids += expandedSolids.Count;
                 }
                 else
                 {
                     result.FailedRooms++;
-                    writeToLog?.Invoke($"✗ FAILED: Room {room.Id} - No solid created, Time: {roomStopwatch.ElapsedMilliseconds}ms");
                 }
                 
                 result.TotalProcessingTime += roomStopwatch.ElapsedMilliseconds;
-                writeToLog?.Invoke("");
             }
             
             totalStopwatch.Stop();

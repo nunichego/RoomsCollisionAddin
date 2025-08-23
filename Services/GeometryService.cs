@@ -132,7 +132,7 @@ namespace RoomsManagerAddin.Services
                     if (profile != null)
                     {
                         var solid = GeometryCreationUtilities.CreateExtrusionGeometry(
-                            new List<CurveLoop> { profile }, XYZ.BasisZ, thickness);
+                            new List<CurveLoop> { profile }, XYZ.BasisZ, height);
                         return solid;
                     }
                 }
