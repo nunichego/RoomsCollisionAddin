@@ -33,7 +33,6 @@ namespace RoomsManagerAddin.Services
                 var geometryElement = element.get_Geometry(new Options());
                 if (geometryElement == null)
                 {
-                    _logger?.LogWarning($"No geometry found for element {element.Id}");
                     return null;
                 }
 
@@ -56,7 +55,6 @@ namespace RoomsManagerAddin.Services
                     }
                 }
 
-                _logger?.LogWarning($"No valid solid found for element {element.Id}");
                 return null;
             }
             catch (Exception ex)
@@ -126,13 +124,14 @@ namespace RoomsManagerAddin.Services
                 {
                     var curve = locationCurve.Curve;
                     var height = wall.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM)?.AsDouble() ?? 10.0;
-                    var thickness = 0.02; // 2cm thickness
+                    var thickness = 0.02; // 2cm thickness for profile width
 
                     var profile = CreateRectangularProfile(curve, height, thickness);
                     if (profile != null)
                     {
+                        // Extrude along Z by height (not thickness)
                         var solid = GeometryCreationUtilities.CreateExtrusionGeometry(
-                            new List<CurveLoop> { profile }, XYZ.BasisZ, thickness);
+                            new List<CurveLoop> { profile }, XYZ.BasisZ, height);
                         return solid;
                     }
                 }

@@ -33,7 +33,7 @@ namespace RoomsManagerAddin.Services
                                    .Where(r => r.Area > 0)
                                    .ToList();
 
-                _logger?.LogInformation($"Found {rooms.Count} rooms");
+                // Keep summary logging elsewhere; suppress here
                 return rooms;
             }
             catch (System.Exception ex)
@@ -56,7 +56,7 @@ namespace RoomsManagerAddin.Services
                                    .Where(w => w.WallType != null)
                                    .ToList();
 
-                _logger?.LogInformation($"Found {walls.Count} walls");
+                // Keep summary logging elsewhere; suppress here
                 return walls;
             }
             catch (System.Exception ex)
@@ -79,7 +79,7 @@ namespace RoomsManagerAddin.Services
                                     .Where(f => f.FloorType != null)
                                     .ToList();
 
-                _logger?.LogInformation($"Found {floors.Count} floors");
+                // Keep summary logging elsewhere; suppress here
                 return floors;
             }
             catch (System.Exception ex)

@@ -29,7 +29,6 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Drawing" />
@@ -68,17 +67,9 @@
     <None Remove="Resources\templates\**\*" />
   </ItemGroup>
 
-  <!-- Build Events -->
+  <!-- Build Events disabled (deployment handled manually) -->
   <PropertyGroup>
-    <PostBuildEvent>
-      <!-- Copy to Revit Add-ins folder -->
-      if not exist "$(APPDATA)\Autodesk\Revit\Addins\2024" mkdir "$(APPDATA)\Autodesk\Revit\Addins\2024"
-      copy "$(TargetPath)" "$(APPDATA)\Autodesk\Revit\Addins\2024\"
-      copy "$(ProjectDir)*.addin" "$(APPDATA)\Autodesk\Revit\Addins\2024\"
-      
-      <!-- Copy dependencies -->
-      if exist "$(TargetDir)*.dll" copy "$(TargetDir)*.dll" "$(APPDATA)\Autodesk\Revit\Addins\2024\"
-    </PostBuildEvent>
+    <PostBuildEvent></PostBuildEvent>
   </PropertyGroup>
 
   <!-- Debug Configuration -->

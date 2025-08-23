@@ -39,6 +39,7 @@ namespace RoomsManagerAddin.Commands
 
                 // Initialize debug logging
                 var debugLogPath = _loggingService.InitializeDebugLogging();
+                _loggingService.SetVerbosity(LoggingService.LogVerbosity.Minimal);
                 if (string.IsNullOrEmpty(debugLogPath))
                 {
                     message = "Failed to initialize debug logging";

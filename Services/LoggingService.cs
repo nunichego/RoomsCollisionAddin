@@ -11,10 +11,23 @@ namespace RoomsManagerAddin.Services
     {
         private readonly ILogger _logger;
         private string _debugLogPath;
+        private LogVerbosity _verbosity = LogVerbosity.Normal;
 
         public LoggingService(ILogger logger)
         {
             _logger = logger;
+        }
+
+        public enum LogVerbosity
+        {
+            Minimal,
+            Normal,
+            Verbose
+        }
+
+        public void SetVerbosity(LogVerbosity verbosity)
+        {
+            _verbosity = verbosity;
         }
 
         /// <summary>
@@ -78,6 +91,15 @@ namespace RoomsManagerAddin.Services
             {
                 if (!string.IsNullOrEmpty(_debugLogPath))
                 {
+                    // Filter noisy lines unless Verbose
+                    if (_verbosity != LogVerbosity.Verbose)
+                    {
+                        if (IsNoisyMessage(message))
+                        {
+                            return;
+                        }
+                    }
+
                     var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
                     var logMessage = $"[{timestamp}] {message}\n";
                     File.AppendAllText(_debugLogPath, logMessage);
@@ -87,6 +109,34 @@ namespace RoomsManagerAddin.Services
             {
                 _logger?.LogError(ex, "Error writing to debug log");
             }
+        }
+
+        private bool IsNoisyMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message)) return false;
+
+            // Skip overly verbose per-element debug lines in Normal/Minimal modes
+            if (message.StartsWith("Regular wall:") ||
+                message.Contains("Getting solid for regular wall") ||
+                message.Contains("Standard solid:") ||
+                message.Contains("Instance solid:") ||
+                message.Contains("Location-based solid") ||
+                message.Contains("Processing curtain wall:") ||
+                message.Contains("Creating curtain wall solid") ||
+                message.Contains("Curve type:") ||
+                message.Contains("Wall height:") ||
+                message.Contains("Creating rectangular profile") ||
+                message.Contains("Profile points:") ||
+                message.Contains("Profile created successfully") ||
+                message.Contains("Created curtain wall solid") ||
+                message.Contains("Updated Room Filter Tag") ||
+                (message.Contains("Wall ") && message.Contains(": Updated Filter Tag")) ||
+                message.Contains("*** DEBUG"))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

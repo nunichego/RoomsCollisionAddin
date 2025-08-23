@@ -34,27 +34,19 @@ namespace RoomsManagerAddin.Services
                 {
                     if (wall.WallType.Kind == WallKind.Curtain)
                     {
-                        writeToLog?.Invoke($"Processing curtain wall: {wall.Id} ({wall.WallType.Name})");
                         var curtainSolid = CreateCurtainWallSolid(wall, writeToLog);
                         if (curtainSolid != null)
                         {
                             result.CurtainWallSolids[wall] = curtainSolid;
-                            writeToLog?.Invoke($"  ✓ Created curtain wall solid: Volume={curtainSolid.Volume:F2}");
-                        }
-                        else
-                        {
-                            writeToLog?.Invoke($"  ✗ Failed to create curtain wall solid");
                         }
                     }
                     else
                     {
                         result.RegularWalls.Add(wall);
-                        writeToLog?.Invoke($"Regular wall: {wall.Id} ({wall.WallType.Name})");
                     }
                 }
                 catch (Exception ex)
                 {
-                    writeToLog?.Invoke($"  ✗ Error processing wall {wall.Id}: {ex.Message}");
                     _logger?.LogError(ex, $"Error processing wall: {wall.Id}");
                 }
             }
@@ -110,7 +102,6 @@ namespace RoomsManagerAddin.Services
                 var geometryElement = wall.get_Geometry(options);
                 if (geometryElement == null)
                 {
-                    writeToLog?.Invoke($"    ✗ No geometry found for wall {wall.Id}");
                     return null;
                 }
 
@@ -118,25 +109,21 @@ namespace RoomsManagerAddin.Services
                 {
                     if (geomObject is Solid solid && solid.Volume > 0)
                     {
-                        writeToLog?.Invoke($"    Standard solid: Volume={solid.Volume:F2}, Faces={solid.Faces.Size}");
                         return solid;
                     }
                     else if (geomObject is GeometryInstance geomInstance)
                     {
-                        writeToLog?.Invoke($"    Found GeometryInstance, checking instance geometry...");
                         var instanceGeometry = geomInstance.GetInstanceGeometry();
                         foreach (var instanceGeom in instanceGeometry)
                         {
                             if (instanceGeom is Solid instanceSolid && instanceSolid.Volume > 0)
                             {
-                                writeToLog?.Invoke($"    Instance solid: Volume={instanceSolid.Volume:F2}, Faces={instanceSolid.Faces.Size}");
                                 return instanceSolid;
                             }
                         }
                     }
                 }
 
-                writeToLog?.Invoke($"    ✗ No valid standard solid found for wall {wall.Id}");
                 return null;
             }
             catch (Exception ex)
@@ -173,16 +160,33 @@ namespace RoomsManagerAddin.Services
 
                 writeToLog?.Invoke($"      Wall height: {wallHeight:F2}, Width: {wallWidth:F2}");
 
-                // Create a rectangular profile from the wall location line
-                var profile = CreateRectangularProfileFromCurve(curve, wallHeight, wallThickness, writeToLog);
+                // Create a rectangular profile from the wall location line at correct base elevation
+                // Compute base elevation from Base Level + Base Offset
+                double baseElevation = 0.0;
+                try
+                {
+                    var baseLevelId = wall.get_Parameter(BuiltInParameter.WALL_BASE_CONSTRAINT)?.AsElementId();
+                    var baseOffset = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET)?.AsDouble() ?? 0.0;
+                    if (baseLevelId != null && baseLevelId != ElementId.InvalidElementId)
+                    {
+                        var level = wall.Document.GetElement(baseLevelId) as Level;
+                        if (level != null) baseElevation = level.Elevation + baseOffset;
+                    }
+                }
+                catch { }
+
+                var profile = CreateRectangularProfileFromCurveAtElevation(curve, wallHeight, wallThickness, baseElevation, writeToLog);
                 if (profile == null)
                 {
                     writeToLog?.Invoke($"      ✗ Failed to create profile for wall: {wall.Id}");
                     return null;
                 }
 
-                // Create solid by extruding the profile
+                // Create solid by extruding the profile upward, then translate so base sits at baseElevation
                 var solid = GeometryCreationUtilities.CreateExtrusionGeometry(new List<CurveLoop> { profile }, XYZ.BasisZ, wallHeight);
+                // CreateExtrusionGeometry centers the extrusion at the profile plane; move up by half the height
+                var transform = Transform.CreateTranslation(new XYZ(0, 0, wallHeight / 2.0));
+                solid = SolidUtils.CreateTransformed(solid, transform);
                 
                 writeToLog?.Invoke($"      Location-based solid: Volume={solid.Volume:F2}, Faces={solid.Faces.Size}");
                 return solid;
@@ -235,6 +239,36 @@ namespace RoomsManagerAddin.Services
             catch (Exception ex)
             {
                 writeToLog?.Invoke($"        ✗ Error creating rectangular profile from curve: {ex.Message}");
+                return null;
+            }
+        }
+
+        private CurveLoop CreateRectangularProfileFromCurveAtElevation(Curve curve, double height, double thickness, double baseElevation, Action<string> writeToLog = null)
+        {
+            try
+            {
+                var curveDirection = (curve.GetEndPoint(1) - curve.GetEndPoint(0)).Normalize();
+                var perpendicular = XYZ.BasisZ.CrossProduct(curveDirection).Normalize();
+                var halfThickness = thickness / 2.0;
+
+                var start = curve.GetEndPoint(0);
+                var end = curve.GetEndPoint(1);
+
+                var p1 = new XYZ(start.X, start.Y, baseElevation) + perpendicular * halfThickness;
+                var p2 = new XYZ(start.X, start.Y, baseElevation) - perpendicular * halfThickness;
+                var p3 = new XYZ(end.X, end.Y, baseElevation) - perpendicular * halfThickness;
+                var p4 = new XYZ(end.X, end.Y, baseElevation) + perpendicular * halfThickness;
+
+                var loop = new CurveLoop();
+                loop.Append(Line.CreateBound(p1, p2));
+                loop.Append(Line.CreateBound(p2, p3));
+                loop.Append(Line.CreateBound(p3, p4));
+                loop.Append(Line.CreateBound(p4, p1));
+                return loop;
+            }
+            catch (Exception ex)
+            {
+                writeToLog?.Invoke($"        ✗ Error creating profile at elevation: {ex.Message}");
                 return null;
             }
         }

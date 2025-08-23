@@ -143,8 +143,8 @@ namespace RoomsManagerAddin
                 // Add Room Volumes button
                 AddRoomVolumesButton(panel);
 
-                // Add VolumesTest01 button
-                AddVolumesTest01Button(panel);
+
+                // Only Room Volumes button
 
                 _logger?.LogInformation("Ribbon interface created successfully");
             }
@@ -193,6 +193,8 @@ namespace RoomsManagerAddin
             }
         }
 
+        
+
         /// <summary>
         /// Load an icon from embedded resources
         /// </summary>
@@ -227,43 +229,7 @@ namespace RoomsManagerAddin
             }
         }
 
-        /// <summary>
-        /// Add the VolumesTest01 button to the ribbon panel
-        /// </summary>
-        private void AddVolumesTest01Button(RibbonPanel panel)
-        {
-            try
-            {
-                // Create button data
-                var buttonData = new PushButtonData(
-                    "VolumesTest01",
-                    "VolumesTest01",
-                    _assemblyPath,
-                    "RoomsManagerAddin.Commands.VolumesTest01Command"
-                );
-
-                // Set button properties
-                buttonData.ToolTip = "Preview room geometry in 3D view using temporary DirectShape elements";
-                buttonData.LongDescription = "Creates semi-transparent 3D previews of room geometry in the current 3D view. Requires a 3D view to be active.";
-
-                // Load icon (same as Room Volumes)
-                var icon = LoadIcon("plans_32_96dpi.png");
-                if (icon != null)
-                {
-                    buttonData.LargeImage = icon;
-                }
-
-                // Create button
-                var button = panel.AddItem(buttonData) as PushButton;
-
-                _logger?.LogInformation("VolumesTest01 button added successfully");
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to add VolumesTest01 button");
-                throw;
-            }
-        }
+        
         #endregion
     }
 }
