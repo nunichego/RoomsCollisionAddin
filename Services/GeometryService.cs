@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using Microsoft.Extensions.Logging;
+
 
 namespace RoomsManagerAddin.Services
 {
@@ -11,11 +11,8 @@ namespace RoomsManagerAddin.Services
     /// </summary>
     public class GeometryService
     {
-        private readonly ILogger _logger;
-
-        public GeometryService(ILogger logger)
+        public GeometryService()
         {
-            _logger = logger;
         }
 
         /// <summary>
@@ -33,7 +30,7 @@ namespace RoomsManagerAddin.Services
                 var geometryElement = element.get_Geometry(new Options());
                 if (geometryElement == null)
                 {
-                    _logger?.LogWarning($"No geometry found for element {element.Id}");
+                    // No geometry found for element
                     return null;
                 }
 
@@ -56,12 +53,12 @@ namespace RoomsManagerAddin.Services
                     }
                 }
 
-                _logger?.LogWarning($"No valid solid found for element {element.Id}");
+                // No valid solid found for element
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger?.LogError(ex, $"Error getting solid for element {element.Id}");
+                // Error getting solid for element
                 return null;
             }
         }
@@ -82,7 +79,7 @@ namespace RoomsManagerAddin.Services
                 var geometryElement = wall.get_Geometry(new Options());
                 if (geometryElement == null)
                 {
-                    _logger?.LogWarning($"No geometry found for wall {wall.Id}");
+                    // No geometry found for wall
                     return null;
                 }
 
@@ -105,12 +102,12 @@ namespace RoomsManagerAddin.Services
                     }
                 }
 
-                _logger?.LogWarning($"No valid solid found for wall {wall.Id}");
+                // No valid solid found for wall
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger?.LogError(ex, $"Error getting solid for wall {wall.Id}");
+                // Error getting solid for wall
                 return null;
             }
         }
@@ -137,12 +134,12 @@ namespace RoomsManagerAddin.Services
                     }
                 }
 
-                _logger?.LogWarning($"Could not create solid for curtain wall {wall.Id}");
+                // Could not create solid for curtain wall
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger?.LogError(ex, $"Error creating curtain wall solid for wall {wall.Id}");
+                // Error creating curtain wall solid
                 return null;
             }
         }
@@ -179,9 +176,9 @@ namespace RoomsManagerAddin.Services
 
                 return curveLoop;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger?.LogError(ex, "Error creating rectangular profile");
+                // Error creating rectangular profile
                 return null;
             }
         }
@@ -199,9 +196,9 @@ namespace RoomsManagerAddin.Services
                     solid1, solid2, BooleanOperationsType.Intersect);
                 return intersection != null && intersection.Volume > 0;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger?.LogError(ex, "Error checking solid intersection");
+                // Error checking solid intersection
                 return false;
             }
         }

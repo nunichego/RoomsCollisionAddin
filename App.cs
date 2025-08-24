@@ -5,8 +5,6 @@ using System.Windows.Media.Imaging;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using RoomsManagerAddin.Services;
 using RoomsManagerAddin.Models;
 
@@ -14,34 +12,21 @@ namespace RoomsManagerAddin
 {
     /// <summary>
     /// Main Revit Add-in Application Class
-    /// Implements IExternalApplication to create ribbon interface and initialize services
+    /// Creates ribbon panel under Add-ins tab
     /// </summary>
     [Transaction(TransactionMode.Manual)]
     public class App : IExternalApplication
     {
         #region Constants
-        private const string TAB_NAME = "Rooms Manager";
-        private const string PANEL_NAME = "Rooms Manager";
+        private const string PANEL_NAME = "RoomDataSync";
         private const string ASSEMBLY_PATH = "RoomsManagerAddin.dll";
         #endregion
 
         #region Private Fields
-        private static IServiceProvider _serviceProvider;
-        private static ILogger<App> _logger;
         private static string _assemblyPath;
         #endregion
 
         #region Properties
-        /// <summary>
-        /// Service provider for dependency injection
-        /// </summary>
-        public static IServiceProvider ServiceProvider => _serviceProvider;
-
-        /// <summary>
-        /// Logger instance for the application
-        /// </summary>
-        public static ILogger<App> Logger => _logger;
-
         /// <summary>
         /// Assembly path for loading resources
         /// </summary>
@@ -56,21 +41,17 @@ namespace RoomsManagerAddin
         {
             try
             {
-                // Initialize application
-                InitializeApplication(application);
-                
-                // Create ribbon interface
-                CreateRibbonInterface(application);
-                
-                // Log successful startup
-                _logger?.LogInformation("Rooms Manager Add-in started successfully");
-                
+                // Get assembly path
+                _assemblyPath = Assembly.GetExecutingAssembly().Location;
+
+                // Create ribbon panel under Add-ins tab
+                CreateRibbonPanel(application);
+
                 return Result.Succeeded;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Failed to start Rooms Manager Add-in");
-                TaskDialog.Show("Error", $"Failed to start Rooms Manager Add-in: {ex.Message}");
+                TaskDialog.Show("Error", $"Failed to start RoomDataSync Add-in: {ex.Message}");
                 return Result.Failed;
             }
         }
@@ -82,18 +63,11 @@ namespace RoomsManagerAddin
         {
             try
             {
-                // Dispose services
-                if (_serviceProvider is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-                
-                _logger?.LogInformation("Rooms Manager Add-in shut down successfully");
                 return Result.Succeeded;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error during Rooms Manager Add-in shutdown");
+                TaskDialog.Show("Error", $"Error during RoomDataSync Add-in shutdown: {ex.Message}");
                 return Result.Failed;
             }
         }
@@ -101,77 +75,48 @@ namespace RoomsManagerAddin
 
         #region Private Methods
         /// <summary>
-        /// Initialize the application and services
+        /// Create the ribbon panel under Add-ins tab
         /// </summary>
-        private void InitializeApplication(UIControlledApplication application)
-        {
-            // Get assembly path
-            _assemblyPath = Assembly.GetExecutingAssembly().Location;
-
-            // Configure services
-            var services = new ServiceCollection();
-
-            // Add logging
-            services.AddLogging(builder =>
-            {
-                // Simple logging configuration for .NET Framework
-            });
-
-            // Add services
-            services.AddSingleton<IConfigurationService, ConfigurationService>();
-
-            // Build service provider
-            _serviceProvider = services.BuildServiceProvider();
-
-            // Get logger
-            _logger = _serviceProvider.GetService<ILogger<App>>();
-        }
-
-        /// <summary>
-        /// Create the ribbon interface
-        /// </summary>
-        private void CreateRibbonInterface(UIControlledApplication application)
+        private void CreateRibbonPanel(UIControlledApplication application)
         {
             try
             {
-                // Create ribbon tab
-                application.CreateRibbonTab(TAB_NAME);
+                // Create ribbon panel under Add-ins tab
+                var panel = application.CreateRibbonPanel(PANEL_NAME);
 
-                // Create ribbon panel
-                var panel = application.CreateRibbonPanel(TAB_NAME, PANEL_NAME);
+                // Add Room Collision Analysis button
+                AddRoomCollisionButton(panel);
 
-                // Add Room Volumes button
-                AddRoomVolumesButton(panel);
+                // Add Settings button (for future tolerance settings)
+                AddSettingsButton(panel);
 
-                // Removed legacy test button wiring
-
-                _logger?.LogInformation("Ribbon interface created successfully");
+                // Add Help button
+                AddHelpButton(panel);
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Failed to create ribbon interface");
-                throw;
+                throw new Exception($"Failed to create ribbon panel: {ex.Message}", ex);
             }
         }
 
         /// <summary>
-        /// Add the Room Volumes button to the ribbon panel
+        /// Add the Room Collision Analysis button to the ribbon panel
         /// </summary>
-        private void AddRoomVolumesButton(RibbonPanel panel)
+        private void AddRoomCollisionButton(RibbonPanel panel)
         {
             try
             {
                 // Create button data
                 var buttonData = new PushButtonData(
-                    "RoomVolumes",
-                    "Room Volumes",
+                    "RoomsWalls",
+                    "Rooms-Walls",
                     _assemblyPath,
-                    "RoomsManagerAddin.Commands.RoomVolumesCommand"
+                    "RoomsManagerAddin.Commands.RoomDataSyncCommand"
                 );
 
                 // Set button properties
-                buttonData.ToolTip = "Analyze room volumes and detect element collisions";
-                buttonData.LongDescription = "Opens the Room Volumes analysis tool to examine room geometry and detect element collisions within room boundaries.";
+                buttonData.ToolTip = "Analyze room collisions and synchronize parameters with surrounding elements";
+                buttonData.LongDescription = "Performs comprehensive collision analysis between rooms and walls, updating room parameters with collision information.";
 
                 // Load icon
                 var icon = LoadIcon("plans_32_96dpi.png");
@@ -182,13 +127,68 @@ namespace RoomsManagerAddin
 
                 // Create button
                 var button = panel.AddItem(buttonData) as PushButton;
-
-                _logger?.LogInformation("Room Volumes button added successfully");
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Failed to add Room Volumes button");
-                throw;
+                throw new Exception($"Failed to add Room Collision Analysis button: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Add the Settings button to the ribbon panel
+        /// </summary>
+        private void AddSettingsButton(RibbonPanel panel)
+        {
+            try
+            {
+                // Create button data
+                var buttonData = new PushButtonData(
+                    "RoomDataSyncSettings",
+                    "Settings",
+                    _assemblyPath,
+                    "RoomsManagerAddin.Commands.SettingsCommand"
+                );
+
+                // Set button properties
+                buttonData.ToolTip = "Configure collision analysis settings and tolerance values";
+                buttonData.LongDescription = "Open settings dialog to configure collision detection tolerance, volume thresholds, and other analysis parameters.";
+
+                // Create button
+                var button = panel.AddItem(buttonData) as PushButton;
+            }
+            catch (Exception ex)
+            {
+                // Settings button is optional, don't fail if it can't be created
+                System.Diagnostics.Debug.WriteLine($"Could not create Settings button: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Add the Help button to the ribbon panel
+        /// </summary>
+        private void AddHelpButton(RibbonPanel panel)
+        {
+            try
+            {
+                // Create button data
+                var buttonData = new PushButtonData(
+                    "RoomDataSyncHelp",
+                    "Help",
+                    _assemblyPath,
+                    "RoomsManagerAddin.Commands.HelpCommand"
+                );
+
+                // Set button properties
+                buttonData.ToolTip = "Get help and documentation for RoomDataSync";
+                buttonData.LongDescription = "View help documentation, tutorials, and troubleshooting information for the RoomDataSync add-in.";
+
+                // Create button
+                var button = panel.AddItem(buttonData) as PushButton;
+            }
+            catch (Exception ex)
+            {
+                // Help button is optional, don't fail if it can't be created
+                System.Diagnostics.Debug.WriteLine($"Could not create Help button: {ex.Message}");
             }
         }
 
@@ -200,33 +200,29 @@ namespace RoomsManagerAddin
             try
             {
                 var assembly = Assembly.GetExecutingAssembly();
-                var resourcePath = $"RoomsManagerAddin.Resources.icons.{iconName}";
+                var resourceName = $"RoomsManagerAddin.Resources.icons.{iconName}";
 
-                using (var stream = assembly.GetManifestResourceStream(resourcePath))
+                using (var stream = assembly.GetManifestResourceStream(resourceName))
                 {
                     if (stream != null)
                     {
-                        var bitmap = new BitmapImage();
-                        bitmap.BeginInit();
-                        bitmap.StreamSource = stream;
-                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmap.EndInit();
-                        bitmap.Freeze();
-                        return bitmap;
+                        var decoder = new PngBitmapDecoder(
+                            stream,
+                            BitmapCreateOptions.PreservePixelFormat,
+                            BitmapCacheOption.Default);
+
+                        return decoder.Frames[0];
                     }
                 }
 
-                _logger?.LogWarning($"Icon not found: {iconName}");
                 return null;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, $"Failed to load icon: {iconName}");
+                System.Diagnostics.Debug.WriteLine($"Could not load icon {iconName}: {ex.Message}");
                 return null;
             }
         }
-
-        
         #endregion
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using Microsoft.Extensions.Logging;
+
 
 namespace RoomsManagerAddin.Services
 {
@@ -12,11 +12,8 @@ namespace RoomsManagerAddin.Services
     /// </summary>
     public class RoomProcessingService
     {
-        private readonly ILogger _logger;
-
-        public RoomProcessingService(ILogger logger)
+        public RoomProcessingService()
         {
-            _logger = logger;
         }
 
 
@@ -93,7 +90,7 @@ namespace RoomsManagerAddin.Services
             catch (Exception ex)
             {
                 writeToLog?.Invoke($"    ✗ Error getting solid for room {room.Id}: {ex.Message}");
-                _logger?.LogError(ex, $"Error getting solid for room: {room.Id}");
+                // Error getting solid for room
                 return null;
             }
         }
@@ -139,7 +136,7 @@ namespace RoomsManagerAddin.Services
             catch (Exception ex)
             {
                 writeToLog?.Invoke($"    ✗ Error creating expanded room solids: {ex.Message}");
-                _logger?.LogError(ex, "Error creating expanded room solids");
+                // Error creating expanded room solids
                 return new List<Solid> { roomSolid }; // Return original solid as fallback
             }
         }

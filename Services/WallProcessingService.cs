@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using Microsoft.Extensions.Logging;
+
 
 namespace RoomsManagerAddin.Services
 {
@@ -12,11 +12,8 @@ namespace RoomsManagerAddin.Services
     /// </summary>
     public class WallProcessingService
     {
-        private readonly ILogger _logger;
-
-        public WallProcessingService(ILogger logger)
+        public WallProcessingService()
         {
-            _logger = logger;
         }
 
         /// <summary>
@@ -48,7 +45,7 @@ namespace RoomsManagerAddin.Services
                 catch (Exception ex)
                 {
                     writeToLog?.Invoke($"  ✗ Error processing wall {wall.Id}: {ex.Message}");
-                    _logger?.LogError(ex, $"Error processing wall: {wall.Id}");
+                    // Error processing wall
                 }
             }
             
@@ -82,7 +79,7 @@ namespace RoomsManagerAddin.Services
             catch (Exception ex)
             {
                 writeToLog?.Invoke($"    ✗ Error getting solid for wall {wall.Id}: {ex.Message}");
-                _logger?.LogError(ex, $"Error getting solid for wall: {wall.Id}");
+                // Error getting solid for wall
                 return null;
             }
         }
@@ -182,7 +179,7 @@ namespace RoomsManagerAddin.Services
             catch (Exception ex)
             {
                 writeToLog?.Invoke($"      ✗ Error creating location-based solid: {ex.Message}");
-                _logger?.LogError(ex, $"Error creating location-based solid for wall: {wall.Id}");
+                // Error creating location-based solid for wall
                 return null;
             }
         }
@@ -272,7 +269,7 @@ namespace RoomsManagerAddin.Services
             catch (Exception ex)
             {
                 writeToLog?.Invoke($"      ✗ Error creating curtain wall solid: {ex.Message}");
-                _logger?.LogError(ex, $"Error creating curtain wall solid for wall: {wall.Id}");
+                // Error creating curtain wall solid for wall
                 return null;
             }
         }

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using Microsoft.Extensions.Logging;
+
 
 namespace RoomsManagerAddin.Services
 {
@@ -11,11 +11,8 @@ namespace RoomsManagerAddin.Services
     /// </summary>
     public class ElementCollectorService
     {
-        private readonly ILogger _logger;
-
-        public ElementCollectorService(ILogger logger)
+        public ElementCollectorService()
         {
-            _logger = logger;
         }
 
         /// <summary>
@@ -33,14 +30,14 @@ namespace RoomsManagerAddin.Services
                                    .Where(r => r.Area > 0)
                                    .ToList();
 
-                _logger?.LogInformation($"Found {rooms.Count} rooms");
+                // Found rooms
                 return rooms;
             }
-            catch (System.Exception ex)
-            {
-                _logger?.LogError(ex, "Error collecting rooms");
-                return new List<Room>();
-            }
+                         catch (System.Exception)
+             {
+                 // Error collecting rooms
+                 return new List<Room>();
+             }
         }
 
         /// <summary>
@@ -56,14 +53,14 @@ namespace RoomsManagerAddin.Services
                                    .Where(w => w.WallType != null)
                                    .ToList();
 
-                _logger?.LogInformation($"Found {walls.Count} walls");
+                // Found walls
                 return walls;
             }
-            catch (System.Exception ex)
-            {
-                _logger?.LogError(ex, "Error collecting walls");
-                return new List<Wall>();
-            }
+                         catch (System.Exception)
+             {
+                 // Error collecting walls
+                 return new List<Wall>();
+             }
         }
 
         /// <summary>
@@ -79,14 +76,14 @@ namespace RoomsManagerAddin.Services
                                     .Where(f => f.FloorType != null)
                                     .ToList();
 
-                _logger?.LogInformation($"Found {floors.Count} floors");
+                // Found floors
                 return floors;
             }
-            catch (System.Exception ex)
-            {
-                _logger?.LogError(ex, "Error collecting floors");
-                return new List<Floor>();
-            }
+                         catch (System.Exception)
+             {
+                 // Error collecting floors
+                 return new List<Floor>();
+             }
         }
     }
 }

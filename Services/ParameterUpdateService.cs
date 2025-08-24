@@ -1,6 +1,6 @@
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using Microsoft.Extensions.Logging;
+
 
 namespace RoomsManagerAddin.Services
 {
@@ -9,11 +9,8 @@ namespace RoomsManagerAddin.Services
     /// </summary>
     public class ParameterUpdateService
     {
-        private readonly ILogger _logger;
-
-        public ParameterUpdateService(ILogger logger)
+        public ParameterUpdateService()
         {
-            _logger = logger;
         }
 
         /// <summary>
@@ -32,17 +29,17 @@ namespace RoomsManagerAddin.Services
                     if (parameter != null && parameter.StorageType == StorageType.String)
                     {
                         parameter.Set(filterTagValue);
-                        _logger?.LogDebug($"Updated room {room.Number} parameter '{paramName}' with: {filterTagValue}");
+                        // Updated room parameter
                         return;
                     }
                 }
 
-                _logger?.LogWarning($"Could not find suitable parameter for room {room.Number}");
+                // Could not find suitable parameter for room
             }
-            catch (System.Exception ex)
-            {
-                _logger?.LogError(ex, $"Error updating room {room.Number} Filter Tag");
-            }
+                         catch (System.Exception)
+             {
+                 // Error updating room Filter Tag
+             }
         }
 
         /// <summary>
@@ -61,17 +58,17 @@ namespace RoomsManagerAddin.Services
                     if (parameter != null && parameter.StorageType == StorageType.String)
                     {
                         parameter.Set(filterTagValue);
-                        _logger?.LogDebug($"Updated wall {wall.Id} parameter '{paramName}' with: {filterTagValue}");
+                        // Updated wall parameter
                         return;
                     }
                 }
 
-                _logger?.LogWarning($"Could not find suitable parameter for wall {wall.Id}");
+                // Could not find suitable parameter for wall
             }
-            catch (System.Exception ex)
-            {
-                _logger?.LogError(ex, $"Error updating wall {wall.Id} Filter Tag");
-            }
+                         catch (System.Exception)
+             {
+                 // Error updating wall Filter Tag
+             }
         }
     }
 }

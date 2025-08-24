@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using Microsoft.Extensions.Logging;
 using RoomsManagerAddin.Models;
 
 namespace RoomsManagerAddin.Services
@@ -13,7 +12,6 @@ namespace RoomsManagerAddin.Services
     /// </summary>
     public class CollisionAnalysisService
     {
-        private readonly ILogger _logger;
         private readonly GeometryService _geometryService;
         private readonly ParameterUpdateService _parameterService;
         private readonly WallProcessingService _wallProcessingService;
@@ -22,9 +20,8 @@ namespace RoomsManagerAddin.Services
         // Cache unit conversion factor for performance
         private double _cachedBufferInProjectUnits = -1;
 
-        public CollisionAnalysisService(ILogger logger, GeometryService geometryService, ParameterUpdateService parameterService, WallProcessingService wallProcessingService, RoomProcessingService roomProcessingService)
+        public CollisionAnalysisService(object logger, GeometryService geometryService, ParameterUpdateService parameterService, WallProcessingService wallProcessingService, RoomProcessingService roomProcessingService)
         {
-            _logger = logger;
             _geometryService = geometryService;
             _parameterService = parameterService;
             _wallProcessingService = wallProcessingService;
@@ -280,7 +277,6 @@ namespace RoomsManagerAddin.Services
                     catch (Exception ex)
                     {
                         writeToLog($"  ✗ ERROR analyzing room {room.Name}: {ex.Message}");
-                        _logger?.LogError(ex, $"Error analyzing room: {room.Name}");
                         results.Add(new RoomCollisionResult
                         {
                             RoomName = room.Name,
@@ -322,7 +318,6 @@ namespace RoomsManagerAddin.Services
                 var bufferInFeet = 1.0 / 30.48; // 1 cm in feet
                 _cachedBufferInProjectUnits = UnitUtils.Convert(bufferInFeet, UnitTypeId.Feet, 
                     document.GetUnits().GetFormatOptions(SpecTypeId.Length).GetUnitTypeId());
-                _logger?.LogDebug($"Cached unit conversion factor: {_cachedBufferInProjectUnits:F6}");
             }
             return _cachedBufferInProjectUnits;
         }

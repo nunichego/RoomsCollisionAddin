@@ -5,7 +5,7 @@ using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
-using Microsoft.Extensions.Logging;
+
 using RoomsManagerAddin;
 using RoomsManagerAddin.Services;
 using RoomsManagerAddin.Models;
@@ -81,13 +81,13 @@ namespace RoomsManagerAddin.Commands
                 // Close progress window
                 _progressService.CloseProgressWindow();
 
-                Logger?.LogInformation($"Room collision analysis completed for {rooms.Count} rooms.");
+                // Room collision analysis completed
                 
                 return Result.Succeeded;
             }
             catch (Exception ex)
             {
-                Logger?.LogError(ex, "Error in RoomVolumesCommand");
+                // Error in RoomVolumesCommand
                 message = $"Error analyzing room volumes: {ex.Message}";
                 return Result.Failed;
             }
@@ -100,15 +100,15 @@ namespace RoomsManagerAddin.Commands
         /// </summary>
         private void InitializeServices()
         {
-            var geometryService = new GeometryService(Logger);
-            var parameterService = new ParameterUpdateService(Logger);
-            var wallProcessingService = new WallProcessingService(Logger);
-            var roomProcessingService = new RoomProcessingService(Logger);
+            var geometryService = new GeometryService();
+            var parameterService = new ParameterUpdateService();
+            var wallProcessingService = new WallProcessingService();
+            var roomProcessingService = new RoomProcessingService();
             
-            _loggingService = new LoggingService(Logger);
-            _progressService = new ProgressService(Logger);
-            _elementCollectorService = new ElementCollectorService(Logger);
-            _collisionAnalysisService = new CollisionAnalysisService(Logger, geometryService, parameterService, wallProcessingService, roomProcessingService);
+            _loggingService = new LoggingService();
+            _progressService = new ProgressService();
+            _elementCollectorService = new ElementCollectorService();
+            _collisionAnalysisService = new CollisionAnalysisService(null, geometryService, parameterService, wallProcessingService, roomProcessingService);
         }
 
         /// <summary>

@@ -3,7 +3,7 @@ using System.Windows;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Microsoft.Extensions.Logging;
+
 using RoomsManagerAddin;
 
 namespace RoomsManagerAddin.Commands
@@ -18,12 +18,12 @@ namespace RoomsManagerAddin.Commands
         /// <summary>
         /// Logger instance for the command
         /// </summary>
-        protected ILogger Logger => App.Logger;
+        protected object Logger => null;
 
         /// <summary>
         /// Service provider for dependency injection
         /// </summary>
-        protected IServiceProvider ServiceProvider => App.ServiceProvider;
+        protected object ServiceProvider => null;
         #endregion
 
         #region IExternalCommand Implementation
@@ -34,29 +34,13 @@ namespace RoomsManagerAddin.Commands
         {
             try
             {
-                // Log command execution
-                Logger?.LogInformation($"Executing command: {GetType().Name}");
-
                 // Execute the command logic
                 var result = ExecuteCommand(commandData, ref message, elements);
-
-                // Log successful execution
-                if (result == Result.Succeeded)
-                {
-                    Logger?.LogInformation($"Command {GetType().Name} executed successfully");
-                }
-                else
-                {
-                    Logger?.LogWarning($"Command {GetType().Name} completed with result: {result}");
-                }
 
                 return result;
             }
             catch (Exception ex)
             {
-                // Log error
-                Logger?.LogError(ex, $"Error executing command {GetType().Name}");
-
                 // Set error message
                 message = $"Error executing {GetType().Name}: {ex.Message}";
 

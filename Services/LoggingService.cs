@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using Microsoft.Extensions.Logging;
+
 
 namespace RoomsManagerAddin.Services
 {
@@ -9,12 +9,10 @@ namespace RoomsManagerAddin.Services
     /// </summary>
     public class LoggingService
     {
-        private readonly ILogger _logger;
         private string _debugLogPath;
 
-        public LoggingService(ILogger logger)
+        public LoggingService()
         {
-            _logger = logger;
         }
 
         /// <summary>
@@ -46,10 +44,10 @@ namespace RoomsManagerAddin.Services
                         _debugLogPath = saveDialog.FileName;
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger?.LogWarning($"Could not show save dialog: {ex.Message}. Using default path.");
-                }
+                                 catch (Exception)
+                 {
+                     // Could not show save dialog, using default path
+                 }
 
                 // Create the log file with header
                 var header = $"=== ROOM COLLISION ANALYSIS LOG ===\n";
@@ -58,15 +56,13 @@ namespace RoomsManagerAddin.Services
                 header += $"=====================================\n\n";
 
                 File.WriteAllText(_debugLogPath, header);
-                _logger?.LogInformation($"Debug logging initialized: {_debugLogPath}");
 
                 return _debugLogPath;
             }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error initializing debug logging");
-                return null;
-            }
+                         catch (Exception)
+             {
+                 return null;
+             }
         }
 
         /// <summary>
@@ -83,10 +79,10 @@ namespace RoomsManagerAddin.Services
                     File.AppendAllText(_debugLogPath, logMessage);
                 }
             }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error writing to debug log");
-            }
+                         catch (Exception)
+             {
+                 // Error writing to debug log
+             }
         }
 
         /// <summary>
@@ -95,6 +91,14 @@ namespace RoomsManagerAddin.Services
         public string GetDebugLogPath()
         {
             return _debugLogPath;
+        }
+
+        /// <summary>
+        /// Write to log (alias for WriteToDebugLog for compatibility)
+        /// </summary>
+        public void WriteToLog(string message)
+        {
+            WriteToDebugLog(message);
         }
     }
 }
