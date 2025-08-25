@@ -27,34 +27,7 @@ namespace RoomsManagerAddin.Services
                     return GetWallSolid(wall);
                 }
 
-                var geometryElement = element.get_Geometry(new Options());
-                if (geometryElement == null)
-                {
-                    // No geometry found for element
-                    return null;
-                }
-
-                foreach (var geometryObject in geometryElement)
-                {
-                    if (geometryObject is Solid solid && solid.Volume > 0)
-                    {
-                        return solid;
-                    }
-                    else if (geometryObject is GeometryInstance geometryInstance)
-                    {
-                        var instanceGeometry = geometryInstance.GetInstanceGeometry();
-                        foreach (var instanceObject in instanceGeometry)
-                        {
-                            if (instanceObject is Solid instanceSolid && instanceSolid.Volume > 0)
-                            {
-                                return instanceSolid;
-                            }
-                        }
-                    }
-                }
-
-                // No valid solid found for element
-                return null;
+                return ExtractSolidFromGeometry(element.get_Geometry(new Options()));
             }
             catch (Exception)
             {
@@ -75,41 +48,46 @@ namespace RoomsManagerAddin.Services
                     return CreateCurtainWallSolid(wall);
                 }
 
-                // For regular walls, use standard geometry
-                var geometryElement = wall.get_Geometry(new Options());
-                if (geometryElement == null)
-                {
-                    // No geometry found for wall
-                    return null;
-                }
-
-                foreach (var geometryObject in geometryElement)
-                {
-                    if (geometryObject is Solid solid && solid.Volume > 0)
-                    {
-                        return solid;
-                    }
-                    else if (geometryObject is GeometryInstance geometryInstance)
-                    {
-                        var instanceGeometry = geometryInstance.GetInstanceGeometry();
-                        foreach (var instanceObject in instanceGeometry)
-                        {
-                            if (instanceObject is Solid instanceSolid && instanceSolid.Volume > 0)
-                            {
-                                return instanceSolid;
-                            }
-                        }
-                    }
-                }
-
-                // No valid solid found for wall
-                return null;
+                // For regular walls, use standard geometry extraction
+                return ExtractSolidFromGeometry(wall.get_Geometry(new Options()));
             }
             catch (Exception)
             {
                 // Error getting solid for wall
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Extract solid geometry from GeometryElement (common logic)
+        /// </summary>
+        private Solid ExtractSolidFromGeometry(GeometryElement geometryElement)
+        {
+            if (geometryElement == null)
+            {
+                return null;
+            }
+
+            foreach (var geometryObject in geometryElement)
+            {
+                if (geometryObject is Solid solid && solid.Volume > 0)
+                {
+                    return solid;
+                }
+                else if (geometryObject is GeometryInstance geometryInstance)
+                {
+                    var instanceGeometry = geometryInstance.GetInstanceGeometry();
+                    foreach (var instanceObject in instanceGeometry)
+                    {
+                        if (instanceObject is Solid instanceSolid && instanceSolid.Volume > 0)
+                        {
+                            return instanceSolid;
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

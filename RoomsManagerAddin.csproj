@@ -62,7 +62,6 @@
     <Compile Include="App.cs" />
     <Compile Include="Commands\BaseCommand.cs" />
     <Compile Include="Commands\RoomDataSyncCommand.cs" />
-    <Compile Include="Commands\RoomVolumesCommand.cs" />
     <Compile Include="Commands\SettingsCommand.cs" />
     <Compile Include="Commands\HelpCommand.cs" />
     <Compile Include="Models\AppSettings.cs" />
