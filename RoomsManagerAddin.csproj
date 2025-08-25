@@ -67,8 +67,8 @@
     <Compile Include="Models\AppSettings.cs" />
     <Compile Include="Models\SharedModels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RoomWallAnalysisForm.cs" />
-    <Compile Include="ProgressForm.cs" />
+        <Compile Include="RoomWallAnalysisWindow.cs" />
+    <Compile Include="ProgressWindow.cs" />
 
     <Compile Include="Services\CollisionAnalysisService.cs" />
     <Compile Include="Services\ConfigurationService.cs" />
@@ -81,6 +81,8 @@
     <Compile Include="Services\RoomProcessingService.cs" />
     <Compile Include="Services\WallProcessingService.cs" />
   </ItemGroup>
+
+
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\icons\plans_16_96dpi.png" />

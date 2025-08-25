@@ -3,104 +3,139 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using RoomsManagerAddin.Services;
 using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Services;
 
 namespace RoomsManagerAddin.Controllers
 {
     /// <summary>
-    /// Controller that separates UI logic from business logic for room-wall analysis
+    /// Orchestrates data loading, filtering, and analysis for the Rooms-Walls workflow.
+    /// Keeps UI code in the form and computation/coordination here.
     /// </summary>
     public class RoomWallAnalysisController
     {
         private readonly Document _document;
-        private readonly ElementCollectorService _elementCollector;
+        private readonly ElementCollectorService _elementCollectorService;
+
+        // Services used by analysis
+        private readonly GeometryService _geometryService;
+        private readonly ParameterUpdateService _parameterUpdateService;
+        private readonly WallProcessingService _wallProcessingService;
+        private readonly RoomProcessingService _roomProcessingService;
         private readonly CollisionAnalysisService _collisionAnalysisService;
+        private readonly LoggingService _loggingService;
 
         public RoomWallAnalysisController(Document document)
         {
             _document = document;
-            _elementCollector = new ElementCollectorService();
-            
-            // Initialize services
-            var geometryService = new GeometryService();
-            var parameterService = new ParameterUpdateService();
-            var wallProcessingService = new WallProcessingService();
-            var roomProcessingService = new RoomProcessingService();
-            
+            _elementCollectorService = new ElementCollectorService();
+
+            _geometryService = new GeometryService();
+            _parameterUpdateService = new ParameterUpdateService();
+            _wallProcessingService = new WallProcessingService();
+            _roomProcessingService = new RoomProcessingService();
+            _loggingService = new LoggingService();
+
             _collisionAnalysisService = new CollisionAnalysisService(
-                null, geometryService, parameterService, wallProcessingService, roomProcessingService);
+                null,
+                _geometryService,
+                _parameterUpdateService,
+                _wallProcessingService,
+                _roomProcessingService
+            );
         }
 
-        /// <summary>
-        /// Load all rooms and walls from the document
-        /// </summary>
-        public void LoadElements(out List<RoomItem> roomItems, out List<WallItem> wallItems)
+        public InitialDataResult LoadInitialData()
         {
-            var rooms = _elementCollector.GetRooms(_document);
-            var walls = _elementCollector.GetWalls(_document);
+            var rooms = _elementCollectorService.GetRooms(_document);
+            var walls = _elementCollectorService.GetWalls(_document);
 
-            roomItems = rooms.Select(r => new RoomItem(r)).ToList();
-            wallItems = walls.Select(w => new WallItem(w)).ToList();
-        }
-
-        /// <summary>
-        /// Filter rooms based on level and minimum area
-        /// </summary>
-        public List<RoomItem> FilterRooms(List<RoomItem> roomItems, string levelFilter, string minAreaText)
-        {
-            var filteredRooms = roomItems.AsEnumerable();
-
-            // Filter by level
-            if (levelFilter != "All Levels")
+            var roomItems = rooms.Select(r => new RoomItem
             {
-                filteredRooms = filteredRooms.Where(r => r.Room.Level?.Name == levelFilter);
-            }
+                Name = r.Name,
+                Number = r.Number,
+                LevelName = r.Level?.Name ?? "Unknown",
+                Area = r.Area,
+                Volume = r.Volume,
+                Id = r.Id
+            }).ToList();
 
-            // Filter by minimum area
-            if (double.TryParse(minAreaText, out double minArea) && minArea > 0)
+            var wallItems = walls.Select(w => new WallItem
             {
-                filteredRooms = filteredRooms.Where(r => r.Room.Area >= minArea);
-            }
+                Name = w.Name,
+                LevelName = w.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM)?.AsElementId() is ElementId levelId && levelId != ElementId.InvalidElementId 
+                    ? _document.GetElement(levelId)?.Name ?? "Unknown" 
+                    : "Unknown",
+                WallTypeName = w.WallType?.Name ?? "Unknown",
+                Length = w.Location is LocationCurve curve ? curve.Curve.Length : 0,
+                Height = w.WallType?.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM)?.AsDouble() ?? 0,
+                Id = w.Id
+            }).ToList();
 
-            return filteredRooms.ToList();
-        }
-
-        /// <summary>
-        /// Filter walls based on level and wall type
-        /// </summary>
-        public List<WallItem> FilterWalls(List<WallItem> wallItems, string levelFilter, string typeFilter)
-        {
-            var filteredWalls = wallItems.AsEnumerable();
-
-            // Filter by level
-            if (levelFilter != "All Levels")
+            return new InitialDataResult
             {
-                filteredWalls = filteredWalls.Where(w => w.GetLevel() == levelFilter);
-            }
-
-            // Filter by wall type
-            if (typeFilter != "All Types")
-            {
-                filteredWalls = filteredWalls.Where(w => w.Wall.WallType?.Name == typeFilter);
-            }
-
-            return filteredWalls.ToList();
-        }
-
-        /// <summary>
-        /// Run collision analysis on selected rooms and walls
-        /// </summary>
-        public List<RoomCollisionResult> Analyze(List<Room> rooms, List<Wall> walls, 
-            Action<string, string, int, int, int, int> progressCallback)
-        {
-            // Create a simple logging callback
-            Action<string> writeToLog = (message) => 
-            {
-                System.Diagnostics.Debug.WriteLine(message);
+                Rooms = roomItems,
+                Walls = wallItems
             };
+        }
 
-            return _collisionAnalysisService.AnalyzeRoomCollisions(_document, rooms, walls, writeToLog, progressCallback);
+        public List<RoomItem> ApplyRoomFilters(List<RoomItem> rooms, string levelFilter, string areaFilter)
+        {
+            var result = rooms.ToList();
+
+            if (!string.IsNullOrEmpty(levelFilter) && levelFilter != "All Levels")
+            {
+                result = result.Where(r => r.LevelName == levelFilter).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(areaFilter) && double.TryParse(areaFilter, out double minArea) && minArea > 0)
+            {
+                result = result.Where(r => r.Area >= minArea).ToList();
+            }
+
+            return result;
+        }
+
+        public List<WallItem> ApplyWallFilters(List<WallItem> walls, string levelFilter, string typeFilter)
+        {
+            var result = walls.ToList();
+
+            if (!string.IsNullOrEmpty(levelFilter) && levelFilter != "All Levels")
+            {
+                result = result.Where(w => w.LevelName == levelFilter).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "All Types")
+            {
+                result = result.Where(w => w.WallTypeName == typeFilter).ToList();
+            }
+
+            return result;
+        }
+
+        public List<RoomCollisionResult> RunAnalysis(List<RoomItem> roomItems, List<WallItem> wallItems)
+        {
+            // Convert back to Revit elements for analysis
+            var rooms = roomItems.Select(ri => _document.GetElement(ri.Id) as Room).Where(r => r != null).ToList();
+            var walls = wallItems.Select(wi => _document.GetElement(wi.Id) as Wall).Where(w => w != null).ToList();
+
+            // Simple progress callback (no UI progress window for now)
+            Action<string, string, int, int, int, int> progressCallback = 
+                (title, message, stepCurrent, stepTotal, overallCurrent, overallTotal) =>
+                {
+                    // TODO: Replace with actual progress window
+                    System.Diagnostics.Debug.WriteLine($"{title}: {message} ({overallCurrent}/{overallTotal})");
+                };
+
+            return _collisionAnalysisService.AnalyzeRoomCollisions(
+                _document,
+                rooms,
+                walls,
+                _loggingService.WriteToLog,
+                progressCallback
+            );
         }
     }
 }
+
+

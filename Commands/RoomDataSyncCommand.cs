@@ -90,9 +90,9 @@ namespace RoomsManagerAddin.Commands
                     return Result.Succeeded;
                 }
 
-                // Show the main interface window (WinForms-based)
-                var analysisForm = new RoomWallAnalysisForm(document);
-                analysisForm.ShowDialog();
+                // Show the main interface window (WPF-based with native Revit styling)
+                var analysisWindow = new RoomWallAnalysisWindow(document);
+                analysisWindow.ShowDialog();
 
                 return Result.Succeeded;
             }

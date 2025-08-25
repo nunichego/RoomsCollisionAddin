@@ -56,6 +56,41 @@ namespace RoomsManagerAddin.Models
         public List<string> WallTypes { get; set; } = new List<string>();
         public string ErrorMessage { get; set; }
     }
+
+    /// <summary>
+    /// UI model for room items
+    /// </summary>
+    public class RoomItem
+    {
+        public string Name { get; set; }
+        public string Number { get; set; }
+        public string LevelName { get; set; }
+        public double Area { get; set; }
+        public double Volume { get; set; }
+        public ElementId Id { get; set; }
+    }
+
+    /// <summary>
+    /// UI model for wall items
+    /// </summary>
+    public class WallItem
+    {
+        public string Name { get; set; }
+        public string LevelName { get; set; }
+        public string WallTypeName { get; set; }
+        public double Length { get; set; }
+        public double Height { get; set; }
+        public ElementId Id { get; set; }
+    }
+
+    /// <summary>
+    /// Data container for initial data loading
+    /// </summary>
+    public class InitialDataResult
+    {
+        public List<RoomItem> Rooms { get; set; } = new List<RoomItem>();
+        public List<WallItem> Walls { get; set; } = new List<WallItem>();
+    }
 }
 
 
