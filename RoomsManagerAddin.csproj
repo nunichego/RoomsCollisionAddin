@@ -65,6 +65,7 @@
     <Compile Include="Commands\SettingsCommand.cs" />
     <Compile Include="Commands\HelpCommand.cs" />
     <Compile Include="Models\AppSettings.cs" />
+    <Compile Include="Models\FilterModels.cs" />
     <Compile Include="Models\SharedModels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="RoomWallAnalysisWindow.cs" />
@@ -78,8 +79,11 @@
     <Compile Include="Services\LoggingService.cs" />
     <Compile Include="Services\ParameterUpdateService.cs" />
     <Compile Include="Services\ProgressService.cs" />
+    <Compile Include="Services\RoomFilterService.cs" />
+    <Compile Include="Services\RoomParameterDiscoveryService.cs" />
     <Compile Include="Services\RoomProcessingService.cs" />
     <Compile Include="Services\WallProcessingService.cs" />
+    <Compile Include="UI\FilterRulesPanel.cs" />
   </ItemGroup>
 
 

@@ -24,6 +24,7 @@ namespace RoomsManagerAddin.Controllers
         private readonly RoomProcessingService _roomProcessingService;
         private readonly CollisionAnalysisService _collisionAnalysisService;
         private readonly LoggingService _loggingService;
+        private readonly RoomFilterService _roomFilterService;
 
         public RoomWallAnalysisController(Document document)
         {
@@ -35,6 +36,7 @@ namespace RoomsManagerAddin.Controllers
             _wallProcessingService = new WallProcessingService();
             _roomProcessingService = new RoomProcessingService();
             _loggingService = new LoggingService();
+            _roomFilterService = new RoomFilterService(_document, _loggingService);
 
             _collisionAnalysisService = new CollisionAnalysisService(
                 null,
@@ -134,6 +136,73 @@ namespace RoomsManagerAddin.Controllers
                 _loggingService.WriteToLog,
                 progressCallback
             );
+        }
+
+        // New filtering system methods
+        public List<ParameterInfo> GetAvailableRoomParameters()
+        {
+            return _roomFilterService.GetAvailableParameters();
+        }
+
+        public List<FilterOperator> GetAvailableOperators(string parameterName)
+        {
+            return _roomFilterService.GetAvailableOperators(parameterName);
+        }
+
+        public ParameterDataType GetParameterDataType(string parameterName)
+        {
+            return _roomFilterService.GetParameterDataType(parameterName);
+        }
+
+        public RoomFilterConfiguration CreateFilterConfiguration(string name = "Custom Filter")
+        {
+            return _roomFilterService.CreateFilterConfiguration(name);
+        }
+
+        public List<RoomItem> ApplyAdvancedFilter(RoomFilterConfiguration filterConfig)
+        {
+            return _roomFilterService.ApplyFilter(filterConfig);
+        }
+
+        public bool ValidateFilterConfiguration(RoomFilterConfiguration filterConfig)
+        {
+            return _roomFilterService.ValidateFilterSet(filterConfig.RootFilterSet);
+        }
+
+        public int CountMatchingRooms(RoomFilterConfiguration filterConfig)
+        {
+            return _roomFilterService.CountMatchingRooms(filterConfig);
+        }
+
+        public string GetFilterDescription(RoomFilterConfiguration filterConfig)
+        {
+            return _roomFilterService.GetFilterDescription(filterConfig);
+        }
+
+        // Test method to create a sample filter configuration for demonstration
+        public RoomFilterConfiguration CreateSampleFilter()
+        {
+            try
+            {
+                var filterConfig = CreateFilterConfiguration("Sample Filter");
+                
+                // Try to create a basic filter: Area > 100
+                var parameters = GetAvailableRoomParameters();
+                var areaParam = parameters.FirstOrDefault(p => p.Name.Equals("Area", StringComparison.OrdinalIgnoreCase));
+                
+                if (areaParam != null)
+                {
+                    var rule = _roomFilterService.CreateFilterRule(areaParam.Name, FilterOperator.GreaterThan, "100");
+                    filterConfig.RootFilterSet.Items.Add(rule);
+                }
+
+                return filterConfig;
+            }
+            catch (Exception ex)
+            {
+                _loggingService.WriteToLog($"Error creating sample filter: {ex.Message}");
+                return CreateFilterConfiguration("Empty Filter");
+            }
         }
     }
 }

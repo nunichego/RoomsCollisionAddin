@@ -9,6 +9,7 @@ using Autodesk.Revit.DB.Architecture;
 using RoomsManagerAddin.Services;
 using RoomsManagerAddin.Models;
 using RoomsManagerAddin.Controllers;
+using RoomsManagerAddin.UI;
 using WpfGrid = System.Windows.Controls.Grid;
 using WpfButton = System.Windows.Controls.Button;
 using WpfLabel = System.Windows.Controls.Label;
@@ -51,14 +52,8 @@ namespace RoomsManagerAddin
         private WpfGrid rightPanel;
         private WpfGrid bottomPanel;
         
-        // Room controls
-        private WpfGroupBox roomsGroupBox;
-        private WpfComboBox roomLevelFilter;
-        private WpfTextBox roomAreaFilter;
-        private WpfLabel roomSummaryLabel;
-        private WpfLabel roomsCountLabel;
-        private WpfListBox roomsListBox;
-        private WpfTextBlock roomDetailsTextBlock;
+        // Filter controls
+        private FilterRulesPanel filterRulesPanel;
         
         // Wall controls
         private WpfGroupBox wallsGroupBox;
@@ -72,6 +67,7 @@ namespace RoomsManagerAddin
         // Action controls
         private WpfLabel statusLabel;
         private WpfButton runAnalysisButton;
+        private WpfButton testFilterButton;
         private WpfButton cancelButton;
         #endregion
 
@@ -112,9 +108,9 @@ namespace RoomsManagerAddin
             topPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             topPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             
-            // Left panel (Rooms)
+            // Left panel (Filter Rules)
             leftPanel = new WpfGrid();
-            CreateRoomsPanel();
+            CreateFilterPanel();
             
             // Splitter
             splitter = new WpfGridSplitter
@@ -151,66 +147,33 @@ namespace RoomsManagerAddin
             Content = mainGrid;
         }
 
-        private void CreateRoomsPanel()
+        private void CreateFilterPanel()
         {
-            roomsGroupBox = new WpfGroupBox
+            // Create the Filter Rules Panel
+            filterRulesPanel = new FilterRulesPanel(_controller);
+            filterRulesPanel.FilterChanged += OnFilterChanged;
+            
+            leftPanel.Children.Add(filterRulesPanel);
+        }
+
+        private void OnFilterChanged(object sender, FilterChangedEventArgs e)
+        {
+            try
             {
-                Header = "Rooms",
-                Margin = new Thickness(0, 0, 0, 20),
-                Padding = new Thickness(16),
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(224, 224, 224)), // #E0E0E0
-                BorderThickness = new Thickness(1),
-                Background = new WpfSolidColorBrush(WpfColors.White)
-            };
-
-            var roomsGrid = new WpfGrid();
-            roomsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Filters
-            roomsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Summary
-            roomsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Count
-            roomsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // List
-            roomsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Details
-
-            // Filters row
-            var filtersPanel = new WpfStackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 16) };
-            
-            filtersPanel.Children.Add(new WpfLabel { Content = "Level:", Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center, FontSize = 14, Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(51, 51, 51)) });
-            roomLevelFilter = new WpfComboBox { Width = 150, Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Center, FontSize = 14 };
-            ApplyModernComboBoxStyle(roomLevelFilter);
-            filtersPanel.Children.Add(roomLevelFilter);
-            
-            filtersPanel.Children.Add(new WpfLabel { Content = "Area:", Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center, FontSize = 14, Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(51, 51, 51)) });
-            roomAreaFilter = new WpfTextBox { Width = 100, Margin = new Thickness(0, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, FontSize = 14 };
-            ApplyModernTextBoxStyle(roomAreaFilter);
-            filtersPanel.Children.Add(roomAreaFilter);
-
-            // Summary and count labels
-            roomSummaryLabel = new WpfLabel { Content = "Loading rooms...", Margin = new Thickness(0, 0, 0, 8), FontSize = 12, Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(102, 102, 102)) };
-            roomsCountLabel = new WpfLabel { Content = "Rooms: 0", Margin = new Thickness(0, 0, 0, 8), FontSize = 14, Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(51, 51, 51)), FontWeight = FontWeights.SemiBold };
-
-            // List box
-            roomsListBox = new WpfListBox { Margin = new Thickness(0, 8, 0, 0), Background = new WpfSolidColorBrush(WpfColors.White), BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(204, 204, 204)), BorderThickness = new Thickness(1) };
-
-            // Details
-            roomDetailsTextBlock = new WpfTextBlock { Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(102, 102, 102)) };
-
-            // Add to grid
-            roomsGrid.Children.Add(filtersPanel);
-            WpfGrid.SetRow(filtersPanel, 0);
-
-            roomsGrid.Children.Add(roomSummaryLabel);
-            WpfGrid.SetRow(roomSummaryLabel, 1);
-
-            roomsGrid.Children.Add(roomsCountLabel);
-            WpfGrid.SetRow(roomsCountLabel, 2);
-
-            roomsGrid.Children.Add(roomsListBox);
-            WpfGrid.SetRow(roomsListBox, 3);
-
-            roomsGrid.Children.Add(roomDetailsTextBlock);
-            WpfGrid.SetRow(roomDetailsTextBlock, 4);
-
-            roomsGroupBox.Content = roomsGrid;
-            leftPanel.Children.Add(roomsGroupBox);
+                // Apply the advanced filter and update the display
+                var filteredRooms = _controller.ApplyAdvancedFilter(e.FilterConfiguration);
+                _filteredRooms = filteredRooms;
+                
+                // Update UI (we'll keep the right panel for now to show results)
+                UpdateWallList(); // Keep walls as-is for now
+                
+                // Update status
+                statusLabel.Content = $"Filter applied: {filteredRooms.Count} rooms match criteria";
+            }
+            catch (Exception ex)
+            {
+                statusLabel.Content = $"Filter error: {ex.Message}";
+            }
         }
 
         private void CreateWallsPanel()
@@ -311,6 +274,18 @@ namespace RoomsManagerAddin
             };
             ApplyModernButtonStyle(runAnalysisButton);
 
+            testFilterButton = new WpfButton
+            {
+                Content = "Test Filter",
+                Width = 100,
+                Height = 36,
+                Margin = new Thickness(0, 0, 8, 0),
+                FontFamily = new FontFamily("Segoe UI"),
+                FontSize = 14,
+                FontWeight = FontWeights.SemiBold
+            };
+            ApplySecondaryButtonStyle(testFilterButton);
+
             cancelButton = new WpfButton
             {
                 Content = "Cancel",
@@ -324,6 +299,7 @@ namespace RoomsManagerAddin
             ApplySecondaryButtonStyle(cancelButton);
 
             buttonsPanel.Children.Add(runAnalysisButton);
+            buttonsPanel.Children.Add(testFilterButton);
             buttonsPanel.Children.Add(cancelButton);
 
             bottomPanel.Children.Add(statusLabel);
@@ -350,9 +326,7 @@ namespace RoomsManagerAddin
                 
                 // Populate UI
                 PopulateFilterDropdowns();
-                UpdateRoomList();
                 UpdateWallList();
-                UpdateCounters();
                 
                 statusLabel.Content = "Ready";
             }
@@ -365,29 +339,21 @@ namespace RoomsManagerAddin
 
         private void SetupEventHandlers()
         {
-            // Filter change events
-            roomLevelFilter.SelectionChanged += (s, e) => ApplyRoomFilters();
-            roomAreaFilter.TextChanged += (s, e) => ApplyRoomFilters();
+            // Wall filter change events
             wallLevelFilter.SelectionChanged += (s, e) => ApplyWallFilters();
             wallTypeFilter.SelectionChanged += (s, e) => ApplyWallFilters();
             
             // List selection events
-            roomsListBox.SelectionChanged += (s, e) => UpdateRoomDetails();
             wallsListBox.SelectionChanged += (s, e) => UpdateWallDetails();
             
             // Button events
             runAnalysisButton.Click += RunAnalysisButton_Click;
+            testFilterButton.Click += TestFilterButton_Click;
             cancelButton.Click += CancelButton_Click;
         }
 
         private void PopulateFilterDropdowns()
         {
-            // Room level filter
-            var roomLevels = _roomItems.Select(r => r.LevelName).Distinct().OrderBy(l => l).ToList();
-            roomLevels.Insert(0, "All Levels");
-            roomLevelFilter.ItemsSource = roomLevels;
-            roomLevelFilter.SelectedIndex = 0;
-            
             // Wall level filter
             var wallLevels = _wallItems.Select(w => w.LevelName).Distinct().OrderBy(l => l).ToList();
             wallLevels.Insert(0, "All Levels");
@@ -403,22 +369,6 @@ namespace RoomsManagerAddin
         #endregion
 
         #region Filtering
-        private void ApplyRoomFilters()
-        {
-            try
-            {
-                var levelFilter = roomLevelFilter.SelectedItem as string;
-                var areaFilter = roomAreaFilter.Text;
-                
-                _filteredRooms = _controller.ApplyRoomFilters(_roomItems, levelFilter, areaFilter);
-                UpdateRoomList();
-                UpdateCounters();
-            }
-            catch (Exception ex)
-            {
-                statusLabel.Content = $"Error applying room filters: {ex.Message}";
-            }
-        }
 
         private void ApplyWallFilters()
         {
@@ -429,7 +379,6 @@ namespace RoomsManagerAddin
                 
                 _filteredWalls = _controller.ApplyWallFilters(_wallItems, levelFilter, typeFilter);
                 UpdateWallList();
-                UpdateCounters();
             }
             catch (Exception ex)
             {
@@ -439,35 +388,11 @@ namespace RoomsManagerAddin
         #endregion
 
         #region UI Updates
-        private void UpdateRoomList()
-        {
-            roomsListBox.ItemsSource = _filteredRooms.Select(r => $"{r.Name} ({r.LevelName})");
-            roomSummaryLabel.Content = $"Showing {_filteredRooms.Count} of {_roomItems.Count} rooms";
-        }
-
         private void UpdateWallList()
         {
             wallsListBox.ItemsSource = _filteredWalls.Select(w => $"{w.Name} ({w.LevelName})");
             wallSummaryLabel.Content = $"Showing {_filteredWalls.Count} of {_wallItems.Count} walls";
-        }
-
-        private void UpdateCounters()
-        {
-            roomsCountLabel.Content = $"Rooms: {_filteredRooms.Count}";
             wallsCountLabel.Content = $"Walls: {_filteredWalls.Count}";
-        }
-
-        private void UpdateRoomDetails()
-        {
-            if (roomsListBox.SelectedIndex >= 0 && roomsListBox.SelectedIndex < _filteredRooms.Count)
-            {
-                var room = _filteredRooms[roomsListBox.SelectedIndex];
-                roomDetailsTextBlock.Text = $"Name: {room.Name}\nLevel: {room.LevelName}\nArea: {room.Area:F2} sq ft\nVolume: {room.Volume:F2} cu ft";
-            }
-            else
-            {
-                roomDetailsTextBlock.Text = "";
-            }
         }
 
         private void UpdateWallDetails()
@@ -518,6 +443,42 @@ namespace RoomsManagerAddin
             finally
             {
                 runAnalysisButton.IsEnabled = true;
+            }
+        }
+
+        private void TestFilterButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                statusLabel.Content = "Testing filter system...";
+                testFilterButton.IsEnabled = false;
+
+                // Get available parameters
+                var parameters = _controller.GetAvailableRoomParameters();
+                var paramCount = parameters.Count;
+
+                // Create and test a sample filter
+                var sampleFilter = _controller.CreateSampleFilter();
+                var matchingRooms = _controller.CountMatchingRooms(sampleFilter);
+                var filterDescription = _controller.GetFilterDescription(sampleFilter);
+
+                var message = $"Filter System Test Results:\n\n" +
+                             $"Available Parameters: {paramCount}\n" +
+                             $"Sample Filter: {filterDescription}\n" +
+                             $"Matching Rooms: {matchingRooms}\n\n" +
+                             $"Filter system is working correctly!";
+
+                MessageBox.Show(message, "Filter System Test", MessageBoxButton.OK, MessageBoxImage.Information);
+                statusLabel.Content = "Filter test completed";
+            }
+            catch (Exception ex)
+            {
+                statusLabel.Content = $"Filter test failed: {ex.Message}";
+                MessageBox.Show($"Filter test error: {ex.Message}", "Filter Test Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                testFilterButton.IsEnabled = true;
             }
         }
 
