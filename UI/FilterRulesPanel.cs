@@ -197,7 +197,14 @@ namespace RoomsManagerAddin.UI
                 // Delete root Set button (allowed for root as per requirements)
                 var deleteRootButton = CreateStyledButton("Delete Set");
                 deleteRootButton.Margin = new Thickness(8, 0, 0, 0);
-                deleteRootButton.Click += (s, e) => DeleteRootSet();
+                deleteRootButton.Click += (s, e) => 
+                {
+                    bool wasDeleted = DeleteRootSet();
+                    if (wasDeleted)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Root filter set cleared successfully");
+                    }
+                };
                 toolbarPanel.Children.Add(deleteRootButton);
 
                 mainHeader.Children.Add(toolbarPanel);
@@ -244,7 +251,16 @@ namespace RoomsManagerAddin.UI
                 placeholder.Children.Add(addRuleBtn);
                 _rulesContainer.Children.Add(placeholder);
             }
-            catch { }
+            catch (NullReferenceException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"NullReference in EnsurePlaceholderIfEmpty: {ex.Message}\n{ex.StackTrace}");
+                throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"InvalidOperation in EnsurePlaceholderIfEmpty: {ex.Message}\n{ex.StackTrace}");
+                throw;
+            }
         }
 
         private void RemovePlaceholder()
@@ -256,21 +272,28 @@ namespace RoomsManagerAddin.UI
                     _rulesContainer.Children.Clear();
                 }
             }
-            catch { }
+            catch (InvalidOperationException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"InvalidOperation in RemovePlaceholder: {ex.Message}\n{ex.StackTrace}");
+                // Safe to suppress this specific exception as it's a UI state issue
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Unexpected error in RemovePlaceholder: {ex.Message}\n{ex.StackTrace}");
+                // Log but allow to continue as this is not critical for functionality
+            }
         }
 
-        public void DeleteRootSet()
+        public bool DeleteRootSet()
         {
-            try
+            if (_currentFilter?.RootFilterSet != null && _currentFilter.RootFilterSet.Items.Count > 0)
             {
-                if (_currentFilter?.RootFilterSet != null)
-                {
-                    _currentFilter.RootFilterSet.Items.Clear();
-                }
+                _currentFilter.RootFilterSet.Items.Clear();
                 EnsurePlaceholderIfEmpty();
                 OnFilterChanged();
+                return true;
             }
-            catch { }
+            return false;
         }
 
         // Public API for external header controls

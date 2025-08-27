@@ -100,5 +100,29 @@ namespace RoomsManagerAddin.Services
         {
             WriteToDebugLog(message);
         }
+
+        /// <summary>
+        /// Log an info message
+        /// </summary>
+        public void LogInfo(string message)
+        {
+            WriteToDebugLog($"[INFO] {message}");
+        }
+
+        /// <summary>
+        /// Log an error message
+        /// </summary>
+        public void LogError(string message)
+        {
+            WriteToDebugLog($"[ERROR] {message}");
+        }
+
+        /// <summary>
+        /// Log a warning message
+        /// </summary>
+        public void LogWarning(string message)
+        {
+            WriteToDebugLog($"[WARNING] {message}");
+        }
     }
 }

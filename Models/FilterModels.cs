@@ -45,6 +45,7 @@ namespace RoomsManagerAddin.Models
         public BuiltInParameter? BuiltInParameterId { get; set; }
         public bool IsBuiltIn { get; set; }
         public bool IsShared { get; set; }
+        public bool IsReadOnly { get; set; }
         public List<string> PossibleValues { get; set; } = new List<string>();
 
         public static ParameterDataType GetParameterDataType(Parameter parameter)
@@ -337,6 +338,21 @@ namespace RoomsManagerAddin.Models
         public List<Element> ApplyFilter(IEnumerable<Element> rooms)
         {
             return rooms.Where(room => RootFilterSet.Evaluate(room)).ToList();
+        }
+    }
+
+    /// <summary>
+    /// Information about a Revit category for selection and filtering
+    /// </summary>
+    public class CategoryInfo
+    {
+        public ElementId Id { get; set; }
+        public string Name { get; set; }
+        public CategoryType CategoryType { get; set; }
+        
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }

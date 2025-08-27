@@ -91,6 +91,18 @@ namespace RoomsManagerAddin.Models
         public List<RoomItem> Rooms { get; set; } = new List<RoomItem>();
         public List<WallItem> Walls { get; set; } = new List<WallItem>();
     }
+
+    /// <summary>
+    /// UI model for generic elements (parallel to RoomItem and WallItem)
+    /// </summary>
+    public class ElementItem
+    {
+        public ElementId Id { get; set; }
+        public string Name { get; set; }
+        public string CategoryName { get; set; }
+        public string LevelName { get; set; }
+        public string TypeName { get; set; }
+    }
 }
 
 

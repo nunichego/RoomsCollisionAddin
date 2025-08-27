@@ -410,32 +410,6 @@ namespace RoomsManagerAddin
             // Build rules UI for this set
             RebuildSetRulesUI(filterSet, setRulesContainer);
             
-            // Empty state for set
-            if (!filterSet.Items?.Any() == true)
-            {
-                var emptyPanel = new Border
-                {
-                    Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(250, 250, 250)),
-                    BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(224, 224, 224)),
-                    BorderThickness = new Thickness(1),
-                    CornerRadius = new CornerRadius(2),
-                    Padding = new Thickness(12),
-                    Margin = new Thickness(0, 6, 0, 0)
-                };
-                
-                var emptyText = new TextBlock 
-                { 
-                    Text = "No rules in this set - click 'Add Rule' to add conditions",
-                    FontStyle = FontStyles.Italic,
-                    FontSize = 11,
-                    Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(136, 136, 136)),
-                    HorizontalAlignment = HorizontalAlignment.Center
-                };
-                
-                emptyPanel.Child = emptyText;
-                setRulesContainer.Children.Add(emptyPanel);
-            }
-            
             border.Child = setPanel;
             return border;
         }

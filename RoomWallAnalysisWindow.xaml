@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="RoomDataSync - Rooms-Walls Analysis"
+        Title="RoomDataSync - Rooms vs Elements Analysis"
         Width="1200" Height="800"
         WindowStartupLocation="CenterScreen"
         Background="White">
@@ -112,12 +112,11 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Top panel: left (filters) | splitter | right (walls) -->
+        <!-- Top panel: left (rooms) | right (other elements) - 50/50 fixed -->
         <Grid Grid.Row="0" Margin="12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Left: Filter rules panel -->
@@ -190,45 +189,78 @@
                 </ScrollViewer>
             </GroupBox>
 
-            <!-- Splitter -->
-            <GridSplitter Grid.Column="1"
-                          Width="8"
-                          Background="#E0E0E0"
-                          HorizontalAlignment="Center"/>
-
             <!-- Right: Walls panel -->
-            <Grid Grid.Column="2" Margin="0">
-                <GroupBox Header="Walls" Margin="0,0,0,20" Padding="16" BorderBrush="#E0E0E0" BorderThickness="1" Background="White">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+            <GroupBox x:Name="RightPanelGroupBox" Grid.Column="1" Header="Walls" 
+                      Margin="8,0,0,0" Padding="16" 
+                      BorderBrush="#E0E0E0" BorderThickness="1" 
+                      Background="White">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Vertical">
+                        <!-- Wall Filter Controls -->
+                        <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
+                                CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Wall Filters" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,8"/>
+                                
+                                <!-- Wall Level Filter -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Level:" VerticalAlignment="Center" FontSize="12"/>
+                                    <ComboBox x:Name="WallLevelFilter" Grid.Column="1" 
+                                              Style="{StaticResource ModernComboBox}"/>
+                                </Grid>
+                                
+                                <!-- Wall Type Filter -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Type:" VerticalAlignment="Center" FontSize="12"/>
+                                    <ComboBox x:Name="WallTypeFilter" Grid.Column="1" 
+                                              Style="{StaticResource ModernComboBox}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
 
-                        <!-- Filters row -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16" Grid.Row="0">
-                            <Label Content="Level:" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="14" Foreground="#333333"/>
-                            <ComboBox x:Name="WallLevelFilter" Width="150" Margin="0,0,16,0" FontSize="14"/>
+                        <!-- Wall Summary -->
+                        <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
+                                CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
+                            <StackPanel>
+                                <Label x:Name="WallSummaryLabel" Content="Showing 0 of 0 walls" 
+                                       FontSize="12" Foreground="#666666" Padding="0"/>
+                                <Label x:Name="WallsCountLabel" Content="Walls: 0" 
+                                       FontSize="11" Foreground="#888888" Padding="0" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
 
-                            <Label Content="Type:" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="14" Foreground="#333333"/>
-                            <ComboBox x:Name="WallTypeFilter" Width="150" FontSize="14"/>
-                        </StackPanel>
-
-                        <!-- Summary and count labels -->
-                        <Label x:Name="WallSummaryLabel" Grid.Row="1" Content="Loading walls..." Margin="0,0,0,8" FontSize="12" Foreground="#666666"/>
-                        <Label x:Name="WallsCountLabel" Grid.Row="2" Content="Walls: 0" Margin="0,0,0,8" FontSize="14" Foreground="#333333" FontWeight="SemiBold"/>
-
-                        <!-- List -->
-                        <ListBox x:Name="WallsListBox" Grid.Row="3" Margin="0,8,0,0"/>
-
-                        <!-- Details -->
-                        <TextBlock x:Name="WallDetailsTextBlock" Grid.Row="4" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="12" Foreground="#666666"/>
-                    </Grid>
-                </GroupBox>
-            </Grid>
+                        <!-- Walls List -->
+                        <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" 
+                                CornerRadius="4" Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="Walls" FontWeight="SemiBold" FontSize="13" 
+                                          Foreground="#333333" Margin="0,0,0,12"/>
+                                <ListBox x:Name="WallsListBox" MaxHeight="300" 
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                                
+                                <!-- Wall Details -->
+                                <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
+                                        CornerRadius="4" Padding="12" Margin="0,12,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Wall Details" FontWeight="SemiBold" FontSize="12" 
+                                                  Foreground="#333333" Margin="0,0,0,8"/>
+                                        <TextBlock x:Name="WallDetailsTextBlock" Text="Select a wall to view details" 
+                                                  FontSize="11" Foreground="#666666" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </GroupBox>
         </Grid>
 
         <!-- Bottom panel -->
