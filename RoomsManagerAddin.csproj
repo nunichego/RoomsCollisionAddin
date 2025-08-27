@@ -27,13 +27,13 @@
     <EmbeddedResource Include="Resources\icons\plans_32_96dpi.png" />
   </ItemGroup>
 
-  <!-- Exclude template files from build -->
+  <!-- Exclude template files and drafts from build -->
   <ItemGroup>
     <Compile Remove="Resources\templates\**\*.cs" />
     <Page Remove="Resources\templates\**\*.xaml" />
     <None Remove="Resources\templates\**\*" />
     <EmbeddedResource Remove="Resources\templates\**\*" />
-    <!-- Exclude duplicate ProgressWindow XAML code-behind -->
+    <Page Remove="UI\drafts\**\*.xaml" />
     <Compile Remove="ProgressWindow.xaml.cs" />
   </ItemGroup>
 

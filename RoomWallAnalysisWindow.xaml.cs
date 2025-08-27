@@ -39,7 +39,8 @@ namespace RoomsManagerAddin
             InitializeComponent();
 
             // Host the existing FilterRulesPanel (programmatic control) into the XAML placeholder
-            var filterPanel = new FilterRulesPanel(_controller);
+            // Host inner panel without outer chrome; group box is in XAML now
+            var filterPanel = new FilterRulesPanel(_controller, false);
             filterPanel.FilterChanged += OnFilterChanged;
             var leftHost = this.FindName("LeftHost") as System.Windows.Controls.Grid;
             if (leftHost != null)

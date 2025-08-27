@@ -21,6 +21,7 @@ namespace RoomsManagerAddin.UI
     public class FilterRulesPanel : UserControl
     {
         private readonly RoomWallAnalysisController _controller;
+        private readonly bool _showOuterChrome;
         private RoomFilterConfiguration _currentFilter;
         private WpfStackPanel _rulesContainer;
         private List<ParameterInfo> _availableParameters;
@@ -28,8 +29,12 @@ namespace RoomsManagerAddin.UI
         public event EventHandler<FilterChangedEventArgs> FilterChanged;
 
         public FilterRulesPanel(RoomWallAnalysisController controller)
+            : this(controller, true) { }
+
+        public FilterRulesPanel(RoomWallAnalysisController controller, bool showOuterChrome)
         {
             _controller = controller;
+            _showOuterChrome = showOuterChrome;
             _currentFilter = controller.CreateFilterConfiguration("Room Filter");
             _availableParameters = controller.GetAvailableRoomParameters();
             
@@ -51,20 +56,16 @@ namespace RoomsManagerAddin.UI
                 Margin = new Thickness(0)
             };
 
-            // Filter Rules section container - Windows 11 style (not tab-like)
             var sectionContainer = new WpfBorder
             {
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(229, 229, 229)), // Subtle neutral border
+                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(229, 229, 229)),
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(4), // Minimal rounded corners
-                Background = new WpfSolidColorBrush(WpfColor.FromRgb(252, 252, 252)), // Very light background
-                Margin = new Thickness(0, 0, 0, 16)
+                CornerRadius = new CornerRadius(4),
+                Background = new WpfSolidColorBrush(WpfColor.FromRgb(252, 252, 252)),
+                Margin = new Thickness(0)
             };
 
-            var sectionPanel = new WpfStackPanel
-            {
-                Orientation = Orientation.Vertical
-            };
+            var sectionPanel = new WpfStackPanel { Orientation = Orientation.Vertical };
 
             // Section header - Windows 11 style
             var sectionHeader = new WpfBorder
@@ -93,7 +94,25 @@ namespace RoomsManagerAddin.UI
             sectionPanel.Children.Add(filterRulesContainer);
             
             sectionContainer.Child = sectionPanel;
-            mainStackPanel.Children.Add(sectionContainer);
+            if (_showOuterChrome)
+            {
+                // Container group for filter rules (matches draft style "Rooms | Filter Elements")
+                var groupContainer = new GroupBox
+                {
+                    Header = "Rooms | Filter Elements",
+                    Margin = new Thickness(0, 0, 0, 16),
+                    Padding = new Thickness(0),
+                    BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(224, 224, 224)),
+                    BorderThickness = new Thickness(1),
+                    Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255))
+                };
+                groupContainer.Content = sectionContainer;
+                mainStackPanel.Children.Add(groupContainer);
+            }
+            else
+            {
+                mainStackPanel.Children.Add(sectionContainer);
+            }
 
             // Dummy test button to verify UI updates are live
             var dummyButton = CreateStyledButton("Dummy Test Button");

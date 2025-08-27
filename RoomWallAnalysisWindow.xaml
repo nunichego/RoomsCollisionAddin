@@ -22,8 +22,10 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Left: Filter rules panel hosted via code -->
-            <Grid x:Name="LeftHost" Grid.Column="0"/>
+            <!-- Left: Filter rules panel hosted via code inside a group container -->
+            <GroupBox Grid.Column="0" Grid.ColumnSpan="1" Header="Rooms | Filter Elements" Margin="0,0,0,0" Padding="0" BorderBrush="#E0E0E0" BorderThickness="1" Background="White">
+                <Grid x:Name="LeftHost" />
+            </GroupBox>
 
             <!-- Splitter -->
             <GridSplitter Grid.Column="1"
