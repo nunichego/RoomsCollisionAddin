@@ -21,6 +21,7 @@ using WpfGroupBox = System.Windows.Controls.GroupBox;
 using WpfStackPanel = System.Windows.Controls.StackPanel;
 using WpfGridSplitter = System.Windows.Controls.GridSplitter;
 using WpfProgressBar = System.Windows.Controls.ProgressBar;
+using WpfBorder = System.Windows.Controls.Border;
 using WpfColor = System.Windows.Media.Color;
 using WpfSolidColorBrush = System.Windows.Media.SolidColorBrush;
 using WpfColors = System.Windows.Media.Colors;
@@ -51,6 +52,9 @@ namespace RoomsManagerAddin
         private WpfGrid leftPanel;
         private WpfGrid rightPanel;
         private WpfGrid bottomPanel;
+        
+        // Selection status panel
+        private WpfTextBlock selectionStatusTextBlock;
         
         // Filter controls
         private FilterRulesPanel filterRulesPanel;
@@ -87,14 +91,14 @@ namespace RoomsManagerAddin
         #region Window Initialization
         private void InitializeWindow()
         {
-            // Window setup - Modern styling like SimpleWindow template
+            // Window setup - Windows 11 Fluent Design styling
             Title = "RoomDataSync - Rooms-Walls Analysis";
             Width = 1200;
             Height = 800;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             ResizeMode = ResizeMode.CanResize;
-            Background = new WpfSolidColorBrush(WpfColor.FromRgb(248, 249, 250)); // #F8F9FA
-            FontFamily = new FontFamily("Segoe UI");
+            Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)); // Pure white background
+            FontFamily = new FontFamily("Segoe UI Variable Text"); // Windows 11 font
             FontSize = 14;
 
             // Main grid
@@ -149,11 +153,40 @@ namespace RoomsManagerAddin
 
         private void CreateFilterPanel()
         {
-            // Create the Filter Rules Panel
+            leftPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Selection status
+            leftPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // Filter rules
+            
+            // Selection status panel - Windows 11 Fluent Design style
+            var selectionStatusPanel = new WpfBorder
+            {
+                Background = new WpfSolidColorBrush(WpfColor.FromRgb(249, 249, 249)), // Neutral light background
+                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(225, 225, 225)), // Subtle border
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(3), // Minimal rounded corners
+                Margin = new Thickness(0, 0, 0, 16),
+                Padding = new Thickness(16, 12, 16, 12)
+            };
+            
+            selectionStatusTextBlock = new WpfTextBlock
+            {
+                Text = "Loading rooms...",
+                FontSize = 13,
+                FontWeight = FontWeights.Normal, // Less bold for modern look
+                Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(50, 50, 50)), // Dark neutral text
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            
+            selectionStatusPanel.Child = selectionStatusTextBlock;
+            leftPanel.Children.Add(selectionStatusPanel);
+            WpfGrid.SetRow(selectionStatusPanel, 0);
+            
+            // Create the Filter Rules Panel (no future features space - removed yellow bar)
             filterRulesPanel = new FilterRulesPanel(_controller);
             filterRulesPanel.FilterChanged += OnFilterChanged;
             
             leftPanel.Children.Add(filterRulesPanel);
+            WpfGrid.SetRow(filterRulesPanel, 1);
         }
 
         private void OnFilterChanged(object sender, FilterChangedEventArgs e)
@@ -164,6 +197,9 @@ namespace RoomsManagerAddin
                 var filteredRooms = _controller.ApplyAdvancedFilter(e.FilterConfiguration);
                 _filteredRooms = filteredRooms;
                 
+                // Update selection status panel
+                UpdateSelectionStatus();
+                
                 // Update UI (we'll keep the right panel for now to show results)
                 UpdateWallList(); // Keep walls as-is for now
                 
@@ -173,6 +209,7 @@ namespace RoomsManagerAddin
             catch (Exception ex)
             {
                 statusLabel.Content = $"Filter error: {ex.Message}";
+                selectionStatusTextBlock.Text = "Filter error occurred";
             }
         }
 
@@ -240,7 +277,9 @@ namespace RoomsManagerAddin
 
         private void CreateBottomPanel()
         {
+            // Make bottom panel smaller (brown sketch from screenshot)
             bottomPanel.Background = new WpfSolidColorBrush(WpfColors.White);
+            bottomPanel.Height = 50; // Shrink height as requested
             bottomPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             bottomPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
@@ -249,8 +288,8 @@ namespace RoomsManagerAddin
             {
                 Content = "Ready",
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(20, 0, 0, 0),
-                FontSize = 12,
+                Margin = new Thickness(16, 0, 0, 0), // Reduced margin
+                FontSize = 11, // Smaller font
                 Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(102, 102, 102))
             };
 
@@ -258,18 +297,18 @@ namespace RoomsManagerAddin
             var buttonsPanel = new WpfStackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Margin = new Thickness(20),
+                Margin = new Thickness(16, 8, 16, 8), // Reduced margins
                 HorizontalAlignment = HorizontalAlignment.Right
             };
 
             runAnalysisButton = new WpfButton
             {
                 Content = "Run Analysis",
-                Width = 120,
-                Height = 36,
-                Margin = new Thickness(0, 0, 8, 0),
+                Width = 110, // Slightly smaller
+                Height = 32, // Smaller height
+                Margin = new Thickness(0, 0, 6, 0), // Reduced margin
                 FontFamily = new FontFamily("Segoe UI"),
-                FontSize = 14,
+                FontSize = 12, // Smaller font
                 FontWeight = FontWeights.SemiBold
             };
             ApplyModernButtonStyle(runAnalysisButton);
@@ -277,11 +316,11 @@ namespace RoomsManagerAddin
             testFilterButton = new WpfButton
             {
                 Content = "Test Filter",
-                Width = 100,
-                Height = 36,
-                Margin = new Thickness(0, 0, 8, 0),
+                Width = 90, // Slightly smaller
+                Height = 32, // Smaller height
+                Margin = new Thickness(0, 0, 6, 0), // Reduced margin
                 FontFamily = new FontFamily("Segoe UI"),
-                FontSize = 14,
+                FontSize = 12, // Smaller font
                 FontWeight = FontWeights.SemiBold
             };
             ApplySecondaryButtonStyle(testFilterButton);
@@ -289,11 +328,11 @@ namespace RoomsManagerAddin
             cancelButton = new WpfButton
             {
                 Content = "Cancel",
-                Width = 80,
-                Height = 36,
+                Width = 70, // Slightly smaller
+                Height = 32, // Smaller height
                 Margin = new Thickness(0, 0, 0, 0),
                 FontFamily = new FontFamily("Segoe UI"),
-                FontSize = 14,
+                FontSize = 12, // Smaller font
                 FontWeight = FontWeights.SemiBold
             };
             ApplySecondaryButtonStyle(cancelButton);
@@ -327,6 +366,7 @@ namespace RoomsManagerAddin
                 // Populate UI
                 PopulateFilterDropdowns();
                 UpdateWallList();
+                UpdateSelectionStatus();
                 
                 statusLabel.Content = "Ready";
             }
@@ -485,6 +525,15 @@ namespace RoomsManagerAddin
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+        private void UpdateSelectionStatus()
+        {
+            if (selectionStatusTextBlock != null)
+            {
+                var totalRooms = _roomItems?.Count ?? 0;
+                var filteredCount = _filteredRooms?.Count ?? 0;
+                selectionStatusTextBlock.Text = $"{filteredCount}/{totalRooms} rooms are selected";
+            }
         }
         #endregion
 

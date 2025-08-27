@@ -39,7 +39,7 @@ namespace RoomsManagerAddin.UI
 
         private void InitializePanel()
         {
-            Background = new WpfSolidColorBrush(WpfColor.FromRgb(245, 247, 251)); // #f5f7fb - matches HTML
+            Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)); // Pure white background
             Padding = new Thickness(20);
         }
 
@@ -51,14 +51,14 @@ namespace RoomsManagerAddin.UI
                 Margin = new Thickness(0)
             };
 
-            // Filter Rules section container
+            // Filter Rules section container - Windows 11 style (not tab-like)
             var sectionContainer = new WpfBorder
             {
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(230, 231, 235)), // #e6e7eb
+                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(229, 229, 229)), // Subtle neutral border
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(6),
-                Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)), // #ffffff
-                Margin = new Thickness(0, 0, 0, 12)
+                CornerRadius = new CornerRadius(4), // Minimal rounded corners
+                Background = new WpfSolidColorBrush(WpfColor.FromRgb(252, 252, 252)), // Very light background
+                Margin = new Thickness(0, 0, 0, 16)
             };
 
             var sectionPanel = new WpfStackPanel
@@ -66,22 +66,22 @@ namespace RoomsManagerAddin.UI
                 Orientation = Orientation.Vertical
             };
 
-            // Section header
+            // Section header - Windows 11 style
             var sectionHeader = new WpfBorder
             {
-                Background = new WpfSolidColorBrush(WpfColor.FromRgb(250, 251, 255)), // #fafbff
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(230, 231, 235)), // #e6e7eb
+                Background = new WpfSolidColorBrush(WpfColor.FromRgb(248, 248, 248)), // Light neutral background
+                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(240, 240, 240)), // Subtle separator
                 BorderThickness = new Thickness(0, 0, 0, 1),
-                Padding = new Thickness(8, 8, 10, 8)
+                Padding = new Thickness(16, 12, 16, 12)
             };
 
             var titleLabel = new WpfLabel
             {
                 Content = "Filter Rules",
-                FontSize = 12,
+                FontSize = 14,
                 FontWeight = FontWeights.SemiBold,
                 Margin = new Thickness(0),
-                Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(107, 114, 128)), // #6b7280
+                Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(32, 32, 32)), // Dark text for better contrast
                 Padding = new Thickness(0)
             };
 
@@ -100,15 +100,15 @@ namespace RoomsManagerAddin.UI
 
         private FrameworkElement CreateMainFilterRulesContainer()
         {
-            // This is the main rule container - matches HTML .rulebox
+            // This is the main rule container - Windows 11 style
             var mainBorder = new WpfBorder
             {
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(215, 217, 223)), // #d7d9df - stronger border
+                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(200, 200, 200)), // Clean neutral border
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(6),
+                CornerRadius = new CornerRadius(4), // Minimal rounded corners
                 Padding = new Thickness(0),
-                Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)), // White background
-                Margin = new Thickness(12)
+                Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)), // Pure white background
+                Margin = new Thickness(20, 12, 12, 12) // Left margin spacing
             };
 
             var mainPanel = new WpfStackPanel
@@ -168,11 +168,11 @@ namespace RoomsManagerAddin.UI
             mainHeader.Children.Add(toolbarPanel);
             headerContainer.Child = mainHeader;
 
-            // Rules content area - matches HTML .rule-rows
+            // Rules content area - Windows 11 style spacing
             var rulesContent = new WpfBorder
             {
-                Padding = new Thickness(12, 12, 10, 12),
-                Margin = new Thickness(0, 8, 0, 0)
+                Padding = new Thickness(20, 16, 20, 16), // Consistent padding all around
+                Margin = new Thickness(16, 12, 16, 0) // Balanced margins
             };
             rulesContent.Child = _rulesContainer;
 
@@ -194,15 +194,15 @@ namespace RoomsManagerAddin.UI
         {
             if (logicalOperator == LogicalOperator.And)
             {
-                // Green for AND - matches HTML
-                border.BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(31, 122, 67)); // #1f7a43 - green
-                border.Background = new WpfSolidColorBrush(WpfColor.FromRgb(230, 245, 236)); // #e6f5ec - light green
+                // Green border only for AND - no background
+                border.BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(16, 124, 16)); // Modern green
+                border.Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)); // White background
             }
             else
             {
-                // Blue for OR - matches HTML  
-                border.BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(37, 99, 235)); // #2563eb - blue
-                border.Background = new WpfSolidColorBrush(WpfColor.FromRgb(245, 247, 251)); // #f5f7fb - light blue
+                // Blue border only for OR - no background
+                border.BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(0, 120, 212)); // Windows 11 blue
+                border.Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)); // White background
             }
         }
 
@@ -426,13 +426,15 @@ namespace RoomsManagerAddin.UI
         {
             var combo = new WpfComboBox
             {
-                Height = 32, // Matches HTML --control-h
-                FontSize = 12,
+                Height = 32, // Windows 11 standard height
+                FontSize = 13, // Better readability
                 Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)),
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(215, 217, 223)), // #d7d9df
+                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(200, 200, 200)), // Neutral border
                 BorderThickness = new Thickness(1),
-                Padding = new Thickness(8, 0, 28, 0),
-                HorizontalAlignment = HorizontalAlignment.Stretch
+                Padding = new Thickness(12, 6, 28, 6), // More padding for modern feel
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                HorizontalContentAlignment = HorizontalAlignment.Left
             };
 
             // Only set width if specified (greater than 0)
@@ -444,12 +446,12 @@ namespace RoomsManagerAddin.UI
 
             if (isRuleMode)
             {
-                // Special styling for rule mode combo (AND/OR)
-                combo.Background = new WpfSolidColorBrush(WpfColor.FromRgb(230, 245, 236)); // #e6f5ec - light green
-                combo.Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(31, 122, 67)); // #1f7a43 - green text
-                combo.BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(184, 220, 191)); // #b8dcbf
+                // Special styling for rule mode combo (AND/OR) - Windows 11 style
+                combo.Background = new WpfSolidColorBrush(WpfColor.FromRgb(245, 245, 245)); // Light neutral background
+                combo.Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(32, 32, 32)); // Dark text
+                combo.BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(180, 180, 180)); // Neutral border
                 combo.FontWeight = FontWeights.SemiBold;
-                combo.Padding = new Thickness(8, 0, 14, 0);
+                combo.Padding = new Thickness(8, 4, 14, 4); // Better vertical centering
             }
 
             return combo;
@@ -459,13 +461,15 @@ namespace RoomsManagerAddin.UI
         {
             var textBox = new WpfTextBox
             {
-                Height = 32, // Matches HTML
-                FontSize = 12,
+                Height = 32, // Windows 11 standard height
+                FontSize = 13, // Better readability
                 Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)),
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(215, 217, 223)), // #d7d9df
+                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(200, 200, 200)), // Neutral border
                 BorderThickness = new Thickness(1),
-                Padding = new Thickness(8, 0, 8, 0),
-                HorizontalAlignment = HorizontalAlignment.Stretch
+                Padding = new Thickness(12, 6, 12, 6), // More padding for modern feel
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                HorizontalContentAlignment = HorizontalAlignment.Left
             };
 
             // Only set width if specified (greater than 0)
@@ -483,19 +487,21 @@ namespace RoomsManagerAddin.UI
             var button = new WpfButton
             {
                 Content = text,
-                Height = 32, // Matches HTML
-                MinWidth = 60,
-                FontSize = 11.5, // Slightly smaller for toolbar buttons
-                Background = new WpfSolidColorBrush(WpfColor.FromRgb(243, 244, 246)), // #f3f4f6
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(209, 213, 219)), // #d1d5db
+                Height = 32, // Windows 11 standard height
+                MinWidth = 80, // More generous minimum width
+                FontSize = 13, // Better readability
+                Background = new WpfSolidColorBrush(WpfColor.FromRgb(251, 251, 251)), // Very light background
+                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(200, 200, 200)), // Neutral border
                 BorderThickness = new Thickness(1),
-                Padding = new Thickness(8, 0, 8, 0),
-                Cursor = System.Windows.Input.Cursors.Hand
+                Padding = new Thickness(16, 6, 16, 6), // More padding for modern feel
+                Cursor = System.Windows.Input.Cursors.Hand,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center
             };
 
-            // Hover effect - matches HTML
-            button.MouseEnter += (s, e) => button.Background = new WpfSolidColorBrush(WpfColor.FromRgb(236, 239, 243)); // #eceff3
-            button.MouseLeave += (s, e) => button.Background = new WpfSolidColorBrush(WpfColor.FromRgb(243, 244, 246)); // #f3f4f6
+            // Windows 11 hover effect
+            button.MouseEnter += (s, e) => button.Background = new WpfSolidColorBrush(WpfColor.FromRgb(240, 240, 240));
+            button.MouseLeave += (s, e) => button.Background = new WpfSolidColorBrush(WpfColor.FromRgb(251, 251, 251));
 
             return button;
         }
@@ -504,23 +510,31 @@ namespace RoomsManagerAddin.UI
         {
             var deleteButton = new WpfButton
             {
-                Content = "−", // Proper minus character
-                Width = 32,
+                Content = "×", // Modern × character
+                Width = 32, // Standard Windows 11 size
                 Height = 32,
                 FontSize = 14,
-                FontWeight = FontWeights.Bold,
+                FontWeight = FontWeights.Normal, // Less bold for modern look
                 Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)),
-                Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(221, 51, 51)), // #d33
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(241, 181, 181)), // #f1b5b5
+                Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(162, 162, 162)), // Subtle gray
+                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(200, 200, 200)), // Neutral border
                 BorderThickness = new Thickness(1),
                 Cursor = System.Windows.Input.Cursors.Hand,
                 HorizontalContentAlignment = HorizontalAlignment.Center,
                 VerticalContentAlignment = VerticalAlignment.Center
             };
 
-            // Hover effect - matches HTML
-            deleteButton.MouseEnter += (s, e) => deleteButton.Background = new WpfSolidColorBrush(WpfColor.FromRgb(253, 236, 236)); // #fdecec
-            deleteButton.MouseLeave += (s, e) => deleteButton.Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255));
+            // Windows 11 delete button hover effect
+            deleteButton.MouseEnter += (s, e) => 
+            {
+                deleteButton.Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 242, 242));
+                deleteButton.Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(196, 43, 28)); // Red on hover
+            };
+            deleteButton.MouseLeave += (s, e) => 
+            {
+                deleteButton.Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255));
+                deleteButton.Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(162, 162, 162));
+            };
 
             return deleteButton;
         }
