@@ -8,6 +8,104 @@
         Width="1200" Height="800"
         WindowStartupLocation="CenterScreen"
         Background="White">
+    
+    <Window.Resources>
+        <!-- Modern Button Style -->
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="#FBFBFB"/>
+            <Setter Property="BorderBrush" Value="#C8C8C8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="MinWidth" Value="70"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F0F0F0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#E5E5E5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Delete Button Style -->
+        <Style x:Key="DeleteButton" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#C8C8C8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#A2A2A2"/>
+            <Setter Property="Content" Value="×"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FFF2F2"/>
+                                <Setter Property="Foreground" Value="#C42B1C"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#FFE5E5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern ComboBox Style -->
+        <Style x:Key="ModernComboBox" TargetType="ComboBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#C8C8C8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4,24,4"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Modern TextBox Style -->
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#C8C8C8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Rule Mode ComboBox Style (AND/OR) -->
+        <Style x:Key="RuleModeComboBox" TargetType="ComboBox" BasedOn="{StaticResource ModernComboBox}">
+            <Setter Property="Background" Value="#F5F5F5"/>
+            <Setter Property="BorderBrush" Value="#B4B4B4"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#202020"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -15,16 +113,81 @@
         </Grid.RowDefinitions>
 
         <!-- Top panel: left (filters) | splitter | right (walls) -->
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="0" Margin="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Left: Filter rules panel hosted via code inside a group container -->
-            <GroupBox Grid.Column="0" Grid.ColumnSpan="1" Header="Rooms | Filter Elements" Margin="0,0,0,0" Padding="0" BorderBrush="#E0E0E0" BorderThickness="1" Background="White">
-                <Grid x:Name="LeftHost" />
+            <!-- Left: Filter rules panel -->
+            <GroupBox Grid.Column="0" Header="Rooms | Filter Elements" 
+                      Margin="0,0,8,0" Padding="16" 
+                      BorderBrush="#E0E0E0" BorderThickness="1" 
+                      Background="White">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Vertical">
+                        <!-- Filter Summary -->
+                        <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
+                                CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Filter Status" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,4"/>
+                                    <TextBlock x:Name="FilterSummaryText" Text="No filters applied - showing all rooms" 
+                                              FontSize="12" Foreground="#666666"/>
+                                    <TextBlock x:Name="FilterCountText" Text="Rooms: 0 of 0" 
+                                              FontSize="11" Foreground="#888888" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                
+                                <Button x:Name="FilterStatusAddRuleButton" Grid.Column="1" Content="Add Rule" 
+                                        Style="{StaticResource ModernButton}" VerticalAlignment="Center" 
+                                        MinWidth="80" Visibility="Visible"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Main Filter Controls -->
+                        <Border x:Name="MainFilterContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
+                                CornerRadius="4" Padding="16" Margin="0,0,0,16" Visibility="Collapsed">
+                            <StackPanel>
+                                <!-- Header with main logical operator -->
+                                <Grid Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ComboBox x:Name="MainOperatorCombo" Grid.Column="0" Width="200" SelectedIndex="0"
+                                              Style="{StaticResource RuleModeComboBox}">
+                                        <ComboBoxItem Content="AND (All must be true)"/>
+                                        <ComboBoxItem Content="OR (Any may be true)"/>
+                                    </ComboBox>
+                                    
+                                    <!-- Right-aligned buttons -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <Button x:Name="AddRuleButton" Content="Add Rule" MinWidth="70" Margin="0,0,6,0"
+                                                Style="{StaticResource ModernButton}"/>
+                                        <Button x:Name="AddSetButton" Content="Add Set" MinWidth="70" Margin="0,0,6,0"
+                                                Style="{StaticResource ModernButton}"/>
+                                        <Button x:Name="ClearFiltersButton" Content="Clear All" MinWidth="70"
+                                                Style="{StaticResource ModernButton}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Dynamic Rules Container -->
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
+                                    <StackPanel x:Name="RulesContainer" Orientation="Vertical"/>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
             </GroupBox>
 
             <!-- Splitter -->
@@ -69,7 +232,7 @@
         </Grid>
 
         <!-- Bottom panel -->
-        <Grid Grid.Row="1" Background="White" Height="50">
+        <Grid Grid.Row="1" Background="White" Height="50" Margin="12,0,12,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>

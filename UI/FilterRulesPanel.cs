@@ -24,6 +24,8 @@ namespace RoomsManagerAddin.UI
         private readonly bool _showOuterChrome;
         private RoomFilterConfiguration _currentFilter;
         private WpfStackPanel _rulesContainer;
+        private WpfBorder _sectionContainerRef;
+        private WpfBorder _mainBorderRef;
         private List<ParameterInfo> _availableParameters;
 
         public event EventHandler<FilterChangedEventArgs> FilterChanged;
@@ -64,30 +66,34 @@ namespace RoomsManagerAddin.UI
                 Background = new WpfSolidColorBrush(WpfColor.FromRgb(252, 252, 252)),
                 Margin = new Thickness(0)
             };
+            _sectionContainerRef = sectionContainer;
 
             var sectionPanel = new WpfStackPanel { Orientation = Orientation.Vertical };
 
-            // Section header - Windows 11 style
-            var sectionHeader = new WpfBorder
+            if (_showOuterChrome)
             {
-                Background = new WpfSolidColorBrush(WpfColor.FromRgb(248, 248, 248)), // Light neutral background
-                BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(240, 240, 240)), // Subtle separator
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                Padding = new Thickness(16, 12, 16, 12)
-            };
+                // Section header - Windows 11 style
+                var sectionHeader = new WpfBorder
+                {
+                    Background = new WpfSolidColorBrush(WpfColor.FromRgb(248, 248, 248)),
+                    BorderBrush = new WpfSolidColorBrush(WpfColor.FromRgb(240, 240, 240)),
+                    BorderThickness = new Thickness(0, 0, 0, 1),
+                    Padding = new Thickness(16, 12, 16, 12)
+                };
 
-            var titleLabel = new WpfLabel
-            {
-                Content = "Filter Rules",
-                FontSize = 14,
-                FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0),
-                Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(32, 32, 32)), // Dark text for better contrast
-                Padding = new Thickness(0)
-            };
+                var titleLabel = new WpfLabel
+                {
+                    Content = "Filter Rules",
+                    FontSize = 14,
+                    FontWeight = FontWeights.SemiBold,
+                    Margin = new Thickness(0),
+                    Foreground = new WpfSolidColorBrush(WpfColor.FromRgb(32, 32, 32)),
+                    Padding = new Thickness(0)
+                };
 
-            sectionHeader.Child = titleLabel;
-            sectionPanel.Children.Add(sectionHeader);
+                sectionHeader.Child = titleLabel;
+                sectionPanel.Children.Add(sectionHeader);
+            }
 
             // Create the main Filter Rules container 
             var filterRulesContainer = CreateMainFilterRulesContainer();
@@ -114,14 +120,7 @@ namespace RoomsManagerAddin.UI
                 mainStackPanel.Children.Add(sectionContainer);
             }
 
-            // Dummy test button to verify UI updates are live
-            var dummyButton = CreateStyledButton("Dummy Test Button");
-            dummyButton.Margin = new Thickness(0, 8, 0, 0);
-            dummyButton.Click += (s, e) =>
-            {
-                System.Windows.MessageBox.Show("Dummy button clicked", "Filter Panel Test");
-            };
-            mainStackPanel.Children.Add(dummyButton);
+            // Remove dev/test button in final UI
 
             Content = mainStackPanel;
         }
@@ -138,63 +137,73 @@ namespace RoomsManagerAddin.UI
                 Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255)), // Pure white background
                 Margin = new Thickness(20, 12, 12, 12) // Left margin spacing
             };
+            _mainBorderRef = mainBorder;
 
             var mainPanel = new WpfStackPanel
             {
                 Orientation = Orientation.Vertical
             };
 
-            // Header section - matches HTML .rulebox-header
-            var headerContainer = new WpfBorder
+            // Header section only when rendering internal chrome
+            if (_showOuterChrome)
             {
-                Padding = new Thickness(8, 8, 10, 8),
-                Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255))
-            };
+                var headerContainer = new WpfBorder
+                {
+                    Padding = new Thickness(8, 8, 10, 8),
+                    Background = new WpfSolidColorBrush(WpfColor.FromRgb(255, 255, 255))
+                };
 
-            var mainHeader = new WpfStackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Margin = new Thickness(0)
-            };
+                var mainHeader = new WpfStackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Margin = new Thickness(0)
+                };
 
-            // Main logical operator - styled like HTML .rulemode
-            var mainOperatorCombo = CreateStyledComboBox(200, true);
-            mainOperatorCombo.Margin = new Thickness(0, 0, 8, 0);
+                // Main logical operator - styled like HTML .rulemode
+                var mainOperatorCombo = CreateStyledComboBox(200, true);
+                mainOperatorCombo.Margin = new Thickness(0, 0, 8, 0);
 
-            mainOperatorCombo.Items.Add("AND (All rules must be true)");
-            mainOperatorCombo.Items.Add("OR (Any rule may be true)");
-            mainOperatorCombo.SelectedIndex = _currentFilter.RootFilterSet.Operator == LogicalOperator.And ? 0 : 1;
-            mainOperatorCombo.SelectionChanged += (s, e) =>
-            {
-                _currentFilter.RootFilterSet.Operator = mainOperatorCombo.SelectedIndex == 0 ? LogicalOperator.And : LogicalOperator.Or;
-                // Update border color based on operator
-                UpdateBorderColor(mainBorder, _currentFilter.RootFilterSet.Operator);
-                OnFilterChanged();
-            };
+                mainOperatorCombo.Items.Add("AND (All rules must be true)");
+                mainOperatorCombo.Items.Add("OR (Any rule may be true)");
+                mainOperatorCombo.SelectedIndex = _currentFilter.RootFilterSet.Operator == LogicalOperator.And ? 0 : 1;
+                mainOperatorCombo.SelectionChanged += (s, e) =>
+                {
+                    _currentFilter.RootFilterSet.Operator = mainOperatorCombo.SelectedIndex == 0 ? LogicalOperator.And : LogicalOperator.Or;
+                    UpdateBorderColor(mainBorder, _currentFilter.RootFilterSet.Operator);
+                    OnFilterChanged();
+                };
 
-            mainHeader.Children.Add(mainOperatorCombo);
+                mainHeader.Children.Add(mainOperatorCombo);
 
-            // Toolbar with buttons - matches HTML .toolbar
-            var toolbarPanel = new WpfStackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Margin = new Thickness(8, 0, 0, 0)
-            };
+                // Toolbar with buttons - matches HTML .toolbar
+                var toolbarPanel = new WpfStackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Margin = new Thickness(8, 0, 0, 0)
+                };
 
-            // Add Rule button
-            var addRuleButton = CreateStyledButton("Add Rule");
-            _rulesContainer = new WpfStackPanel { Orientation = Orientation.Vertical };
-            addRuleButton.Click += (s, e) => AddNewRule(_currentFilter.RootFilterSet, _rulesContainer);
-            toolbarPanel.Children.Add(addRuleButton);
+                // Add Rule button
+                var addRuleButton = CreateStyledButton("Add Rule");
+                _rulesContainer = new WpfStackPanel { Orientation = Orientation.Vertical };
+                addRuleButton.Click += (s, e) => AddNewRule(_currentFilter.RootFilterSet, _rulesContainer);
+                toolbarPanel.Children.Add(addRuleButton);
 
-            // Add Set button
-            var addSetButton = CreateStyledButton("Add Set");
-            addSetButton.Margin = new Thickness(8, 0, 0, 0);
-            addSetButton.Click += (s, e) => AddNewSet(_currentFilter.RootFilterSet, _rulesContainer);
-            toolbarPanel.Children.Add(addSetButton);
+                // Add Set button
+                var addSetButton = CreateStyledButton("Add Set");
+                addSetButton.Margin = new Thickness(8, 0, 0, 0);
+                addSetButton.Click += (s, e) => AddNewSet(_currentFilter.RootFilterSet, _rulesContainer);
+                toolbarPanel.Children.Add(addSetButton);
 
-            mainHeader.Children.Add(toolbarPanel);
-            headerContainer.Child = mainHeader;
+                // Delete root Set button (allowed for root as per requirements)
+                var deleteRootButton = CreateStyledButton("Delete Set");
+                deleteRootButton.Margin = new Thickness(8, 0, 0, 0);
+                deleteRootButton.Click += (s, e) => DeleteRootSet();
+                toolbarPanel.Children.Add(deleteRootButton);
+
+                mainHeader.Children.Add(toolbarPanel);
+                headerContainer.Child = mainHeader;
+                mainPanel.Children.Add(headerContainer);
+            }
 
             // Rules content area - Windows 11 style spacing
             var rulesContent = new WpfBorder
@@ -202,20 +211,100 @@ namespace RoomsManagerAddin.UI
                 Padding = new Thickness(20, 16, 20, 16), // Consistent padding all around
                 Margin = new Thickness(16, 12, 16, 0) // Balanced margins
             };
+            if (_rulesContainer == null)
+            {
+                _rulesContainer = new WpfStackPanel { Orientation = Orientation.Vertical };
+            }
             rulesContent.Child = _rulesContainer;
 
-            mainPanel.Children.Add(headerContainer);
             mainPanel.Children.Add(rulesContent);
 
             mainBorder.Child = mainPanel;
 
-            // Add initial rule if none exist
-            if (!_currentFilter.RootFilterSet.Items.Any())
-            {
-                AddNewRule(_currentFilter.RootFilterSet, _rulesContainer);
-            }
+            // No default rule; show placeholder if empty (root visible chrome)
+            EnsurePlaceholderIfEmpty();
 
             return mainBorder;
+        }
+
+        private void EnsurePlaceholderIfEmpty()
+        {
+            try
+            {
+                if (_currentFilter.RootFilterSet == null)
+                {
+                    _currentFilter.RootFilterSet = new FilterSet { Operator = LogicalOperator.And };
+                }
+                if (_currentFilter.RootFilterSet.Items.Any())
+                    return;
+                _rulesContainer.Children.Clear();
+                var placeholder = new WpfStackPanel { Orientation = Orientation.Horizontal };
+                var addRuleBtn = CreateStyledButton("Add Rule");
+                addRuleBtn.Click += (s, e) => AddNewRule(_currentFilter.RootFilterSet, _rulesContainer);
+                placeholder.Children.Add(addRuleBtn);
+                _rulesContainer.Children.Add(placeholder);
+            }
+            catch { }
+        }
+
+        private void RemovePlaceholder()
+        {
+            try
+            {
+                if (_rulesContainer.Children.Count == 1 && _rulesContainer.Children[0] is WpfStackPanel sp && sp.Children.OfType<WpfButton>().Any())
+                {
+                    _rulesContainer.Children.Clear();
+                }
+            }
+            catch { }
+        }
+
+        public void DeleteRootSet()
+        {
+            try
+            {
+                if (_currentFilter?.RootFilterSet != null)
+                {
+                    _currentFilter.RootFilterSet.Items.Clear();
+                }
+                EnsurePlaceholderIfEmpty();
+                OnFilterChanged();
+            }
+            catch { }
+        }
+
+        // Public API for external header controls
+        public void SetMainOperator(LogicalOperator op)
+        {
+            _currentFilter.RootFilterSet.Operator = op;
+            if (_mainBorderRef != null)
+            {
+                UpdateBorderColor(_mainBorderRef, op);
+            }
+            OnFilterChanged();
+        }
+
+        public LogicalOperator GetMainOperator()
+        {
+            return _currentFilter.RootFilterSet.Operator;
+        }
+
+        public void AddRule()
+        {
+            if (_rulesContainer == null)
+            {
+                _rulesContainer = new WpfStackPanel { Orientation = Orientation.Vertical };
+            }
+            AddNewRule(_currentFilter.RootFilterSet, _rulesContainer);
+        }
+
+        public void AddSet()
+        {
+            if (_rulesContainer == null)
+            {
+                _rulesContainer = new WpfStackPanel { Orientation = Orientation.Vertical };
+            }
+            AddNewSet(_currentFilter.RootFilterSet, _rulesContainer);
         }
 
         private void UpdateBorderColor(WpfBorder border, LogicalOperator logicalOperator)
@@ -236,6 +325,7 @@ namespace RoomsManagerAddin.UI
 
         private void AddNewRule(FilterSet parentSet, WpfStackPanel container)
         {
+            RemovePlaceholder();
             var rule = new RoomFilterRule
             {
                 Parameter = _availableParameters.FirstOrDefault(),
@@ -254,6 +344,7 @@ namespace RoomsManagerAddin.UI
 
         private void AddNewSet(FilterSet parentSet, WpfStackPanel container)
         {
+            RemovePlaceholder();
             var newSet = new FilterSet
             {
                 Operator = LogicalOperator.And,
