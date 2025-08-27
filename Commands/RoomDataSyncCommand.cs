@@ -7,6 +7,7 @@ using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using RoomsManagerAddin.Services;
 using RoomsManagerAddin.Models;
+using System.Windows.Interop;
 
 namespace RoomsManagerAddin.Commands
 {
@@ -30,7 +31,7 @@ namespace RoomsManagerAddin.Commands
                 var services = InitializeServices();
 
                 // Show main dialog
-                var result = ShowMainDialog(document, services);
+                var result = ShowMainDialog(document, services, uiApp);
 
                 return result;
             }
@@ -76,7 +77,7 @@ namespace RoomsManagerAddin.Commands
         /// <summary>
         /// Show the main RoomDataSync interface window
         /// </summary>
-        private Result ShowMainDialog(Document document, Dictionary<Type, object> services)
+        private Result ShowMainDialog(Document document, Dictionary<Type, object> services, UIApplication uiApp)
         {
             try
             {
@@ -92,6 +93,8 @@ namespace RoomsManagerAddin.Commands
 
                 // Show the main interface window (WPF-based with native Revit styling)
                 var analysisWindow = new RoomWallAnalysisWindow(document);
+                // Set Revit as the owner window to keep dialog on top and modal
+                new WindowInteropHelper(analysisWindow) { Owner = uiApp.MainWindowHandle };
                 analysisWindow.ShowDialog();
 
                 return Result.Succeeded;

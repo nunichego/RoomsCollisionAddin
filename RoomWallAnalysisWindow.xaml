@@ -1,0 +1,85 @@
+<Window x:Class="RoomsManagerAddin.RoomWallAnalysisWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="RoomDataSync - Rooms-Walls Analysis"
+        Width="1200" Height="800"
+        WindowStartupLocation="CenterScreen"
+        Background="White">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top panel: left (filters) | splitter | right (walls) -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Filter rules panel hosted via code -->
+            <Grid x:Name="LeftHost" Grid.Column="0"/>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1"
+                          Width="8"
+                          Background="#E0E0E0"
+                          HorizontalAlignment="Center"/>
+
+            <!-- Right: Walls panel -->
+            <Grid Grid.Column="2" Margin="0">
+                <GroupBox Header="Walls" Margin="0,0,0,20" Padding="16" BorderBrush="#E0E0E0" BorderThickness="1" Background="White">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Filters row -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16" Grid.Row="0">
+                            <Label Content="Level:" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="14" Foreground="#333333"/>
+                            <ComboBox x:Name="WallLevelFilter" Width="150" Margin="0,0,16,0" FontSize="14"/>
+
+                            <Label Content="Type:" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="14" Foreground="#333333"/>
+                            <ComboBox x:Name="WallTypeFilter" Width="150" FontSize="14"/>
+                        </StackPanel>
+
+                        <!-- Summary and count labels -->
+                        <Label x:Name="WallSummaryLabel" Grid.Row="1" Content="Loading walls..." Margin="0,0,0,8" FontSize="12" Foreground="#666666"/>
+                        <Label x:Name="WallsCountLabel" Grid.Row="2" Content="Walls: 0" Margin="0,0,0,8" FontSize="14" Foreground="#333333" FontWeight="SemiBold"/>
+
+                        <!-- List -->
+                        <ListBox x:Name="WallsListBox" Grid.Row="3" Margin="0,8,0,0"/>
+
+                        <!-- Details -->
+                        <TextBlock x:Name="WallDetailsTextBlock" Grid.Row="4" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="12" Foreground="#666666"/>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+        </Grid>
+
+        <!-- Bottom panel -->
+        <Grid Grid.Row="1" Background="White" Height="50">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Label x:Name="StatusLabel" Content="Ready" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="11" Foreground="#666666"/>
+
+            <StackPanel Orientation="Horizontal" Margin="16,8,16,8" HorizontalAlignment="Right" Grid.Column="1">
+                <Button x:Name="RunAnalysisButton" Content="Run Analysis" Width="110" Height="32" Margin="0,0,6,0"/>
+                <Button x:Name="CancelButton" Content="Cancel" Width="70" Height="32"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
+

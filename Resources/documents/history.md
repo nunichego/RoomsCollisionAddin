@@ -202,3 +202,27 @@ RoomsManagerAddin/
 ---
 
 *Last Updated: August 25, 2025 - Added Phase 6: Major Performance Breakthrough*
+ 
+### Phase 7: Migration to XAML UI Shell (August 27, 2025)
+- **Date**: August 27, 2025
+- **Goal**: Preserve existing programmatic filter UI while introducing a XAML-based window shell for better maintainability
+- **Scope**:
+  - Keep `FilterRulesPanel` (AND/OR, sets, rules) programmatic and unchanged
+  - Introduce `RoomWallAnalysisWindow.xaml` as the main window layout
+  - Preserve all existing functionality and behavior
+- **Key Changes**:
+  - Owner hookup: set Revit main window as Owner via `WindowInteropHelper` in `RoomDataSyncCommand`
+  - Added `RoomWallAnalysisWindow.xaml` and hosted existing `FilterRulesPanel` inside the XAML placeholder
+  - Converted project to SDK-style `Microsoft.NET.Sdk.WindowsDesktop` with `<UseWPF>true</UseWPF>` for XAML compilation
+  - Excluded template content under `Resources/templates/**` from build to avoid XAML parse conflicts
+  - Resolved `Grid` type ambiguity by fully qualifying `System.Windows.Controls.Grid` in code-behind
+  - Excluded duplicate `ProgressWindow.xaml.cs` to avoid type/member conflicts
+- **Verification**:
+  - Built successfully via `dotnet build`
+  - Deployed DLL and `.addin` to `%AppData%/Autodesk/Revit/Addins/2024`
+  - Add-in launched; UI preserved
+  - Added a small dummy button to `FilterRulesPanel` to confirm hot updates
+- **Benefits**:
+  - Maintainability of window layout via XAML
+  - No loss of existing filtering capabilities
+  - XAML-ready pipeline for future UI enhancements

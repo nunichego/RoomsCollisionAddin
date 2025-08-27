@@ -8,6 +8,7 @@ using Autodesk.Revit.DB.Architecture;
 using RoomsManagerAddin.Services;
 using RoomsManagerAddin.Models;
 using RoomsManagerAddin.Controllers;
+using RoomsManagerAddin.UI;
 
 namespace RoomsManagerAddin
 {
@@ -34,8 +35,18 @@ namespace RoomsManagerAddin
             _document = document;
             _elementCollector = new ElementCollectorService();
             _controller = new RoomWallAnalysisController(document);
-            
+
             InitializeComponent();
+
+            // Host the existing FilterRulesPanel (programmatic control) into the XAML placeholder
+            var filterPanel = new FilterRulesPanel(_controller);
+            filterPanel.FilterChanged += OnFilterChanged;
+            var leftHost = this.FindName("LeftHost") as System.Windows.Controls.Grid;
+            if (leftHost != null)
+            {
+                leftHost.Children.Add(filterPanel);
+            }
+
             LoadData();
             SetupEventHandlers();
         }
@@ -57,7 +68,6 @@ namespace RoomsManagerAddin
                 
                 // Populate UI
                 PopulateFilterDropdowns();
-                UpdateRoomList();
                 UpdateWallList();
                 UpdateCounters();
                 
@@ -72,25 +82,20 @@ namespace RoomsManagerAddin
 
         private void SetupEventHandlers()
         {
-            // Filter change events
-            RoomLevelFilter.SelectionChanged += (s, e) => ApplyRoomFilters();
-            RoomAreaFilter.TextChanged += (s, e) => ApplyRoomFilters();
+            // We keep only walls filters in this window; room filtering handled by FilterRulesPanel
             WallLevelFilter.SelectionChanged += (s, e) => ApplyWallFilters();
             WallTypeFilter.SelectionChanged += (s, e) => ApplyWallFilters();
             
             // List selection events
-            RoomsListBox.SelectionChanged += (s, e) => UpdateRoomDetails();
             WallsListBox.SelectionChanged += (s, e) => UpdateWallDetails();
+
+            // Buttons
+            RunAnalysisButton.Click += RunAnalysisButton_Click;
+            CancelButton.Click += CancelButton_Click;
         }
 
         private void PopulateFilterDropdowns()
         {
-            // Room level filter
-            var roomLevels = _roomItems.Select(r => r.LevelName).Distinct().OrderBy(l => l).ToList();
-            roomLevels.Insert(0, "All Levels");
-            RoomLevelFilter.ItemsSource = roomLevels;
-            RoomLevelFilter.SelectedIndex = 0;
-            
             // Wall level filter
             var wallLevels = _wallItems.Select(w => w.LevelName).Distinct().OrderBy(l => l).ToList();
             wallLevels.Insert(0, "All Levels");
@@ -106,23 +111,6 @@ namespace RoomsManagerAddin
         #endregion
 
         #region Filtering
-        private void ApplyRoomFilters()
-        {
-            try
-            {
-                var levelFilter = RoomLevelFilter.SelectedItem as string;
-                var areaFilter = RoomAreaFilter.Text;
-                
-                _filteredRooms = _controller.ApplyRoomFilters(_roomItems, levelFilter, areaFilter);
-                UpdateRoomList();
-                UpdateCounters();
-            }
-            catch (Exception ex)
-            {
-                StatusLabel.Content = $"Error applying room filters: {ex.Message}";
-            }
-        }
-
         private void ApplyWallFilters()
         {
             try
@@ -142,12 +130,6 @@ namespace RoomsManagerAddin
         #endregion
 
         #region UI Updates
-        private void UpdateRoomList()
-        {
-            RoomsListBox.ItemsSource = _filteredRooms.Select(r => $"{r.Name} ({r.LevelName})");
-            RoomSummaryLabel.Content = $"Showing {_filteredRooms.Count} of {_roomItems.Count} rooms";
-        }
-
         private void UpdateWallList()
         {
             WallsListBox.ItemsSource = _filteredWalls.Select(w => $"{w.Name} ({w.LevelName})");
@@ -156,20 +138,21 @@ namespace RoomsManagerAddin
 
         private void UpdateCounters()
         {
-            RoomsCountLabel.Content = $"Rooms: {_filteredRooms.Count}";
             WallsCountLabel.Content = $"Walls: {_filteredWalls.Count}";
         }
 
-        private void UpdateRoomDetails()
+        private void OnFilterChanged(object sender, FilterChangedEventArgs e)
         {
-            if (RoomsListBox.SelectedIndex >= 0 && RoomsListBox.SelectedIndex < _filteredRooms.Count)
+            try
             {
-                var room = _filteredRooms[RoomsListBox.SelectedIndex];
-                RoomDetailsTextBlock.Text = $"Name: {room.Name}\nLevel: {room.LevelName}\nArea: {room.Area:F2} sq ft\nVolume: {room.Volume:F2} cu ft";
+                // Apply advanced filter to rooms and update status
+                var filteredRooms = _controller.ApplyAdvancedFilter(e.FilterConfiguration);
+                _filteredRooms = filteredRooms;
+                StatusLabel.Content = $"Filter applied: {filteredRooms.Count} rooms match criteria";
             }
-            else
+            catch (Exception ex)
             {
-                RoomDetailsTextBlock.Text = "";
+                StatusLabel.Content = $"Filter error: {ex.Message}";
             }
         }
 

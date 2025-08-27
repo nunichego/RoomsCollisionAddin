@@ -39,6 +39,27 @@
 - **Solution**: Added `<Compile Remove>`, `<Page Remove>`, `<None Remove>` directives
 - **Prevention**: Explicitly exclude template directories from build
 
+#### Error: Classic WPF XAML not compiling with dotnet build
+- **Date**: August 27, 2025
+- **Error**: `InitializeComponent` missing; XAML names not found when using classic .csproj with `dotnet build`
+- **Root Cause**: Non-SDK project didn’t invoke proper WPF build targets via `dotnet build` (no MSBuild on PATH)
+- **Solution**: Migrated to SDK-style `Microsoft.NET.Sdk.WindowsDesktop` with `<UseWPF>true</UseWPF>` to enable XAML compilation under `dotnet build`
+- **Prevention**: Prefer SDK-style with UseWPF when building via `dotnet build`
+
+#### Error: XAML parse errors from template files
+- **Date**: August 27, 2025
+- **Error**: `ScrollViewer can accept only one child`, invalid XML entity in template XAML
+- **Root Cause**: `Resources/templates/**` sample files accidentally included in build
+- **Solution**: Added `<Compile Remove>`, `<Page Remove>`, `<None Remove>`, `<EmbeddedResource Remove>` for `Resources/templates/**`
+- **Prevention**: Exclude sample/template directories from compilation in project file
+
+#### Error: Duplicate `ProgressWindow` declarations
+- **Date**: August 27, 2025
+- **Error**: Duplicate type/member errors between `ProgressWindow.cs` and `ProgressWindow.xaml.cs`
+- **Root Cause**: Both programmatic and XAML code-behind existed simultaneously
+- **Solution**: Excluded `ProgressWindow.xaml.cs` from compilation (keeping programmatic version)
+- **Prevention**: Avoid compiling parallel implementations; choose one per component
+
 #### Error: `.addin` file not copied during build
 - **Date**: Early August 2025
 - **Error**: Add-in manifest not being deployed to Revit folder

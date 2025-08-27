@@ -95,6 +95,15 @@ namespace RoomsManagerAddin.UI
             sectionContainer.Child = sectionPanel;
             mainStackPanel.Children.Add(sectionContainer);
 
+            // Dummy test button to verify UI updates are live
+            var dummyButton = CreateStyledButton("Dummy Test Button");
+            dummyButton.Margin = new Thickness(0, 8, 0, 0);
+            dummyButton.Click += (s, e) =>
+            {
+                System.Windows.MessageBox.Show("Dummy button clicked", "Filter Panel Test");
+            };
+            mainStackPanel.Children.Add(dummyButton);
+
             Content = mainStackPanel;
         }
 
