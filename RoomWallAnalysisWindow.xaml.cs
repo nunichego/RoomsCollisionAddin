@@ -88,10 +88,10 @@ namespace RoomsManagerAddin
         private void SetupEventHandlers()
         {
             // Element category selection
-            ElementCategoryCombo.SelectionChanged += (s, e) => OnElementCategoryChanged();
+            ElementCategoryCombo.SelectionChanged += OnElementCategoryChanged;
             
-            // Room filter events
-            MainOperatorCombo.SelectionChanged += (s, e) => OnMainOperatorChanged();
+            // Room filter events  
+            MainOperatorCombo.SelectionChanged += OnMainOperatorChanged;
             
             // Room filter buttons
             AddRuleButton.Click += (s, e) => AddNewRule();
@@ -100,7 +100,7 @@ namespace RoomsManagerAddin
             FilterStatusAddRuleButton.Click += (s, e) => AddNewRule();
             
             // Element filter events
-            ElementMainOperatorCombo.SelectionChanged += (s, e) => OnElementMainOperatorChanged();
+            ElementMainOperatorCombo.SelectionChanged += OnElementMainOperatorChanged;
             
             // Element filter buttons
             ElementAddRuleButton.Click += (s, e) => AddNewElementRule();
@@ -111,6 +111,22 @@ namespace RoomsManagerAddin
             // Analysis buttons
             RunAnalysisButton.Click += RunAnalysisButton_Click;
             CancelButton.Click += CancelButton_Click;
+        }
+
+        // Convert lambda expressions to proper event handler methods
+        private void OnElementCategoryChanged(object sender, SelectionChangedEventArgs e)
+        {
+            OnElementCategoryChanged();
+        }
+
+        private void OnMainOperatorChanged(object sender, SelectionChangedEventArgs e)
+        {
+            OnMainOperatorChanged();
+        }
+
+        private void OnElementMainOperatorChanged(object sender, SelectionChangedEventArgs e)
+        {
+            OnElementMainOperatorChanged();
         }
 
         private void PopulateFilterDropdowns()
@@ -148,27 +164,46 @@ namespace RoomsManagerAddin
                 if (selectedIndex <= 0) // "Select Category" selected
                 {
                     ClearElementSelection();
-                    return;
+                    return; // Early return prevents further processing
                 }
 
                 var selectedCategoryName = ElementCategoryCombo.SelectedItem as string;
+                if (string.IsNullOrEmpty(selectedCategoryName) || _availableCategories == null)
+                {
+                    ClearElementSelection();
+                    return;
+                }
+
                 var selectedCategory = _availableCategories.FirstOrDefault(c => c.Name == selectedCategoryName);
                 
-                if (selectedCategory != null)
+                if (selectedCategory != null && _elementController != null)
                 {
                     StatusLabel.Content = $"Loading {selectedCategory.Name} elements...";
                     
                     // Select category in controller
                     _elementController.SelectCategory(selectedCategory);
                     
-                    // Update available parameters for this category
-                    _availableElementParameters = _elementController.AvailableParameters;
+                    // Update available parameters for this category with null checks
+                    _availableElementParameters = _elementController.AvailableParameters ?? new List<ParameterInfo>();
                     
-                    // Create new filter configuration
+                    // Create new filter configuration with null checks
                     _currentElementFilter = _elementController.CreateFilterConfiguration($"{selectedCategory.Name} Filter");
+                    if (_currentElementFilter?.RootFilterSet == null)
+                    {
+                        _currentElementFilter = new ElementFilterConfiguration
+                        {
+                            Name = $"{selectedCategory.Name} Filter",
+                            CategoryId = selectedCategory.Id,
+                            RootFilterSet = new FilterSet
+                            {
+                                Operator = LogicalOperator.And,
+                                Items = new List<IFilterItem>()
+                            }
+                        };
+                    }
                     
-                    // Update filtered elements
-                    _filteredElements = _elementController.FilteredElements;
+                    // Update filtered elements with null checks
+                    _filteredElements = _elementController.FilteredElements ?? new List<Element>();
                     
                     // Update UI
                     UpdateElementFilterUI();
@@ -176,9 +211,14 @@ namespace RoomsManagerAddin
                     
                     StatusLabel.Content = $"Selected {selectedCategory.Name}: {_filteredElements.Count} elements";
                 }
+                else
+                {
+                    ClearElementSelection();
+                }
             }
             catch (Exception ex)
             {
+                ClearElementSelection(); // Ensure clean state on error
                 StatusLabel.Content = $"Error selecting category: {ex.Message}";
                 MessageBox.Show($"Error selecting category: {ex.Message}", "RoomDataSync Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -186,15 +226,22 @@ namespace RoomsManagerAddin
 
         private void ClearElementSelection()
         {
-            _elementController.ClearCategory();
-            _availableElementParameters.Clear();
-            _filteredElements.Clear();
-            _currentElementFilter = null;
-            
-            UpdateElementFilterUI();
-            UpdateElementCounters();
-            
-            StatusLabel.Content = "No element category selected";
+            try
+            {
+                _elementController?.ClearCategory();
+                _availableElementParameters?.Clear();
+                _filteredElements?.Clear();
+                _currentElementFilter = null;
+                
+                UpdateElementFilterUI();
+                UpdateElementCounters();
+                
+                StatusLabel.Content = "No element category selected";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error clearing selection: {ex.Message}";
+            }
         }
         #endregion
 
@@ -248,20 +295,28 @@ namespace RoomsManagerAddin
             try
             {
                 // Apply advanced filter if rules exist
-                if (_currentElementFilter?.RootFilterSet?.Items?.Any() == true)
+                if (_currentElementFilter?.RootFilterSet?.Items?.Any() == true && _elementController != null)
                 {
-                    _filteredElements = _elementController.ApplyAdvancedFilter(_currentElementFilter);
+                    _filteredElements = _elementController.ApplyAdvancedFilter(_currentElementFilter) ?? new List<Element>();
                 }
                 else
                 {
-                    // No filters - show all elements
-                    _filteredElements = _elementController.AllElements;
+                    // No filters - show all elements with null checks
+                    if (_elementController != null)
+                    {
+                        _filteredElements = _elementController.AllElements ?? new List<Element>();
+                    }
+                    else
+                    {
+                        _filteredElements = new List<Element>(); // Safe fallback
+                    }
                 }
                 
                 UpdateElementCounters();
             }
             catch (Exception ex)
             {
+                _filteredElements = new List<Element>(); // Ensure never null
                 StatusLabel.Content = $"Element filter error: {ex.Message}";
             }
         }
@@ -821,18 +876,53 @@ namespace RoomsManagerAddin
         
         private void AddNewElementRule()
         {
-            if (_availableElementParameters?.Any() == true && _currentElementFilter != null)
+            try
             {
-                var rule = new ElementFilterRule
+                // Ensure we have a valid filter configuration
+                if (_currentElementFilter?.RootFilterSet == null)
                 {
-                    Parameter = _availableElementParameters.First(),
-                    Operator = FilterOperator.Equals,
-                    Value = ""
-                };
-                
-                _currentElementFilter.RootFilterSet.Items.Add(rule);
-                UpdateElementFilterUI(); // This will show the other controls now that we have rules
-                ApplyElementFilters();
+                    if (_elementController?.SelectedCategory != null)
+                    {
+                        // Initialize filter if missing
+                        _currentElementFilter = new ElementFilterConfiguration
+                        {
+                            Name = $"{_elementController.SelectedCategory.Name} Filter",
+                            CategoryId = _elementController.SelectedCategory.Id,
+                            RootFilterSet = new FilterSet
+                            {
+                                Operator = LogicalOperator.And,
+                                Items = new List<IFilterItem>()
+                            }
+                        };
+                    }
+                    else
+                    {
+                        StatusLabel.Content = "No category selected - cannot add rule";
+                        return;
+                    }
+                }
+
+                if (_availableElementParameters?.Any() == true)
+                {
+                    var rule = new ElementFilterRule
+                    {
+                        Parameter = _availableElementParameters.First(),
+                        Operator = FilterOperator.Equals,
+                        Value = ""
+                    };
+                    
+                    _currentElementFilter.RootFilterSet.Items.Add(rule);
+                    UpdateElementFilterUI(); // This will show the other controls now that we have rules
+                    ApplyElementFilters();
+                }
+                else
+                {
+                    StatusLabel.Content = "No parameters available for this category";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error adding element rule: {ex.Message}";
             }
         }
         
@@ -1181,6 +1271,46 @@ namespace RoomsManagerAddin
             }
         }
         
+        // Helper methods for safe wall parameter access
+        private string GetSafeLevelName(Wall wall)
+        {
+            try
+            {
+                if (wall?.Document == null) return "Unknown";
+                var level = wall.Document.GetElement(wall.LevelId) as Level;
+                return level?.Name ?? "Unknown";
+            }
+            catch
+            {
+                return "Unknown";
+            }
+        }
+
+        private string GetSafeWallTypeName(Wall wall)
+        {
+            try
+            {
+                return wall?.WallType?.Name ?? "Unknown";
+            }
+            catch
+            {
+                return "Unknown";
+            }
+        }
+
+        private double GetSafeParameterValue(Wall wall, BuiltInParameter parameterType)
+        {
+            try
+            {
+                var param = wall?.get_Parameter(parameterType);
+                return param?.AsDouble() ?? 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        
         #endregion
 
         #region Event Handlers
@@ -1192,17 +1322,48 @@ namespace RoomsManagerAddin
                 RunAnalysisButton.IsEnabled = false;
                 
                 // Run analysis through controller - currently only supports wall analysis
-                // For now, convert filtered elements to walls if they are walls, otherwise use empty list
+                // Safely convert filtered elements to walls if they are walls, with error handling
                 var wallElements = _filteredElements?.OfType<Wall>().ToList() ?? new List<Wall>();
-                var wallItems = wallElements.Select(w => new WallItem
+                var wallItems = new List<WallItem>();
+                
+                foreach (var wall in wallElements)
                 {
-                    Id = w.Id,
-                    Name = w.Name,
-                    LevelName = (w.Document.GetElement(w.LevelId) as Level)?.Name ?? "Unknown",
-                    WallTypeName = w.WallType?.Name ?? "Unknown",
-                    Length = w.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH)?.AsDouble() ?? 0,
-                    Height = w.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM)?.AsDouble() ?? 0
-                }).ToList();
+                    try
+                    {
+                        if (wall?.Document == null) continue; // Skip invalid walls
+                        
+                        var wallItem = new WallItem
+                        {
+                            Id = wall.Id,
+                            Name = wall.Name ?? $"Wall {wall.Id}",
+                            LevelName = GetSafeLevelName(wall),
+                            WallTypeName = GetSafeWallTypeName(wall),
+                            Length = GetSafeParameterValue(wall, BuiltInParameter.CURVE_ELEM_LENGTH),
+                            Height = GetSafeParameterValue(wall, BuiltInParameter.WALL_USER_HEIGHT_PARAM)
+                        };
+                        
+                        wallItems.Add(wallItem);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error but continue processing other walls
+                        System.Diagnostics.Debug.WriteLine($"Error processing wall {wall?.Id}: {ex.Message}");
+                        
+                        // Add a minimal wall item so analysis can continue
+                        if (wall?.Id != null)
+                        {
+                            wallItems.Add(new WallItem
+                            {
+                                Id = wall.Id,
+                                Name = $"Wall {wall.Id} (Error)",
+                                LevelName = "Unknown",
+                                WallTypeName = "Unknown",
+                                Length = 0,
+                                Height = 0
+                            });
+                        }
+                    }
+                }
 
                 var results = _controller.RunAnalysis(_filteredRooms, wallItems);
                 
@@ -1235,6 +1396,69 @@ namespace RoomsManagerAddin
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+        #endregion
+
+        #region Cleanup and Disposal
+        protected override void OnClosed(EventArgs e)
+        {
+            try
+            {
+                // Unsubscribe from UI event handlers to prevent memory leaks
+                if (ElementCategoryCombo != null)
+                    ElementCategoryCombo.SelectionChanged -= OnElementCategoryChanged;
+                    
+                if (MainOperatorCombo != null)
+                    MainOperatorCombo.SelectionChanged -= OnMainOperatorChanged;
+                    
+                if (ElementMainOperatorCombo != null)
+                    ElementMainOperatorCombo.SelectionChanged -= OnElementMainOperatorChanged;
+                    
+                if (RunAnalysisButton != null)
+                    RunAnalysisButton.Click -= RunAnalysisButton_Click;
+                    
+                if (CancelButton != null)
+                    CancelButton.Click -= CancelButton_Click;
+
+                // Clean up collections
+                _availableElementParameters?.Clear();
+                _availableElementParameters = null;
+                
+                _filteredElements?.Clear();
+                _filteredElements = null;
+                
+                _availableCategories?.Clear();
+                _availableCategories = null;
+                
+                _filteredRooms?.Clear();
+                _filteredRooms = null;
+                
+                _roomItems?.Clear();
+                _roomItems = null;
+
+                // Clear filter configurations
+                _currentElementFilter = null;
+                _currentFilter = null;
+
+                // Dispose controllers if they implement IDisposable
+                if (_elementController is IDisposable disposableElementController)
+                    disposableElementController.Dispose();
+                    
+                if (_controller is IDisposable disposableController)
+                    disposableController.Dispose();
+                    
+                _elementController = null;
+                _controller = null;
+                _elementCollector = null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error during cleanup: {ex.Message}");
+            }
+            finally
+            {
+                base.OnClosed(e);
+            }
         }
         #endregion
     }
