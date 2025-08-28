@@ -55,8 +55,11 @@ namespace RoomsManagerAddin.Models
                 case StorageType.String:
                     return ParameterDataType.Text;
                 case StorageType.Integer:
-                    // For Revit 2024, we need to check differently for YesNo parameters
-                    // Most integer parameters in rooms are actually numeric values
+                    // Check if this is actually a Yes/No parameter
+                    if (IsYesNoParameter(parameter))
+                    {
+                        return ParameterDataType.YesNo;
+                    }
                     return ParameterDataType.Integer;
                 case StorageType.Double:
                     return ParameterDataType.Double;
@@ -64,6 +67,51 @@ namespace RoomsManagerAddin.Models
                     return ParameterDataType.ElementId;
                 default:
                     return ParameterDataType.Unknown;
+            }
+        }
+
+        private static bool IsYesNoParameter(Parameter parameter)
+        {
+            try
+            {
+                // Method 1: Check parameter definition for Yes/No type
+                if (parameter.Definition is InternalDefinition internalDef)
+                {
+                    // Common Yes/No built-in parameters
+                    var yesNoParameterNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        "Room Bounding", "Structural", "Bearing", "Enabled in Project", 
+                        "Visible", "Shared", "Load Bearing", "Structural Usage",
+                        "Visible in Plan", "Show in Schedule", "Assembly"
+                    };
+
+                    if (yesNoParameterNames.Contains(parameter.Definition.Name))
+                    {
+                        return true;
+                    }
+                }
+
+                // Method 2: Try to determine from parameter value range
+                // Yes/No parameters typically have values 0 or 1
+                if (parameter.HasValue)
+                {
+                    int value = parameter.AsInteger();
+                    // If it's 0 or 1, and the parameter name suggests boolean, treat as Yes/No
+                    if ((value == 0 || value == 1) && 
+                        (parameter.Definition.Name.Contains("Enable") || 
+                         parameter.Definition.Name.Contains("Show") || 
+                         parameter.Definition.Name.Contains("Visible") ||
+                         parameter.Definition.Name.Contains("Bound")))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
             }
         }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Interop;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using RoomsManagerAddin.Services;
@@ -28,6 +29,7 @@ namespace RoomsManagerAddin
         
         // Filtered data
         private List<RoomItem> _filteredRooms;
+        private List<WallItem> _wallItems; // Original wall data for analysis
         
         // Element panel data
         private List<CategoryInfo> _availableCategories;
@@ -61,10 +63,11 @@ namespace RoomsManagerAddin
             {
                 StatusLabel.Content = "Loading data...";
                 
-                // Load room data through controller
+                // Load room and wall data through controller
                 var data = _controller.LoadInitialData();
                 _roomItems = data.Rooms;
                 _filteredRooms = new List<RoomItem>(_roomItems);
+                _wallItems = data.Walls; // Store wall data for analysis
                 
                 // Load element categories
                 _availableCategories = _elementController.GetAvailableCategories();
@@ -988,11 +991,7 @@ namespace RoomsManagerAddin
                 parameterCombo.Items.Add(param.Name);
             }
             parameterCombo.SelectedItem = rule.Parameter?.Name;
-            parameterCombo.SelectionChanged += (s, e) =>
-            {
-                rule.Parameter = _availableElementParameters.FirstOrDefault(p => p.Name == parameterCombo.SelectedItem?.ToString());
-                ApplyElementFilters();
-            };
+            
             System.Windows.Controls.Grid.SetColumn(parameterCombo, 1);
             topGrid.Children.Add(parameterCombo);
             
@@ -1007,6 +1006,16 @@ namespace RoomsManagerAddin
             // Operator
             var operatorCombo = new ComboBox { Style = (Style)FindResource("ModernComboBox"), Margin = new Thickness(0, 0, 8, 0) };
             UpdateElementOperatorCombo(rule, operatorCombo);
+            
+            // Set up parameter change handler with access to operatorCombo
+            parameterCombo.SelectionChanged += (s, e) =>
+            {
+                rule.Parameter = _availableElementParameters.FirstOrDefault(p => p.Name == parameterCombo.SelectedItem?.ToString());
+                // Update operator combo when parameter changes to reflect new data type
+                UpdateElementOperatorCombo(rule, operatorCombo);
+                ApplyElementFilters();
+            };
+            
             operatorCombo.SelectionChanged += (s, e) =>
             {
                 rule.Operator = GetOperatorFromDisplayText(operatorCombo.SelectedItem?.ToString());
@@ -1205,11 +1214,7 @@ namespace RoomsManagerAddin
                 parameterCombo.Items.Add(param.Name);
             }
             parameterCombo.SelectedItem = rule.Parameter?.Name;
-            parameterCombo.SelectionChanged += (s, e) =>
-            {
-                rule.Parameter = _availableElementParameters.FirstOrDefault(p => p.Name == parameterCombo.SelectedItem?.ToString());
-                ApplyElementFilters();
-            };
+            
             System.Windows.Controls.Grid.SetColumn(parameterCombo, 1);
             topGrid.Children.Add(parameterCombo);
             
@@ -1224,6 +1229,16 @@ namespace RoomsManagerAddin
             // Operator
             var operatorCombo = new ComboBox { Style = (Style)FindResource("ModernComboBox"), Margin = new Thickness(0, 0, 8, 0) };
             UpdateElementOperatorCombo(rule, operatorCombo);
+            
+            // Set up parameter change handler with access to operatorCombo
+            parameterCombo.SelectionChanged += (s, e) =>
+            {
+                rule.Parameter = _availableElementParameters.FirstOrDefault(p => p.Name == parameterCombo.SelectedItem?.ToString());
+                // Update operator combo when parameter changes to reflect new data type
+                UpdateElementOperatorCombo(rule, operatorCombo);
+                ApplyElementFilters();
+            };
+            
             operatorCombo.SelectionChanged += (s, e) =>
             {
                 rule.Operator = GetOperatorFromDisplayText(operatorCombo.SelectedItem?.ToString());
@@ -1271,6 +1286,39 @@ namespace RoomsManagerAddin
             }
         }
         
+        // Helper method to convert Element objects back to WallItem objects
+        private List<WallItem> ConvertElementsToWallItems(List<Element> elements)
+        {
+            var wallItems = new List<WallItem>();
+            
+            foreach (var element in elements)
+            {
+                if (element is Wall wall)
+                {
+                    try
+                    {
+                        var wallItem = new WallItem
+                        {
+                            Name = wall.Name,
+                            LevelName = GetSafeLevelName(wall),
+                            WallTypeName = GetSafeWallTypeName(wall),
+                            Length = wall.Location is LocationCurve curve ? curve.Curve.Length : 0,
+                            Height = GetSafeParameterValue(wall, BuiltInParameter.WALL_USER_HEIGHT_PARAM),
+                            Id = wall.Id
+                        };
+                        
+                        wallItems.Add(wallItem);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error converting wall {wall.Id} to WallItem: {ex.Message}");
+                    }
+                }
+            }
+            
+            return wallItems;
+        }
+
         // Helper methods for safe wall parameter access
         private string GetSafeLevelName(Wall wall)
         {
@@ -1321,51 +1369,13 @@ namespace RoomsManagerAddin
                 StatusLabel.Content = "Running analysis...";
                 RunAnalysisButton.IsEnabled = false;
                 
-                // Run analysis through controller - currently only supports wall analysis
-                // Safely convert filtered elements to walls if they are walls, with error handling
-                var wallElements = _filteredElements?.OfType<Wall>().ToList() ?? new List<Wall>();
-                var wallItems = new List<WallItem>();
-                
-                foreach (var wall in wallElements)
-                {
-                    try
-                    {
-                        if (wall?.Document == null) continue; // Skip invalid walls
-                        
-                        var wallItem = new WallItem
-                        {
-                            Id = wall.Id,
-                            Name = wall.Name ?? $"Wall {wall.Id}",
-                            LevelName = GetSafeLevelName(wall),
-                            WallTypeName = GetSafeWallTypeName(wall),
-                            Length = GetSafeParameterValue(wall, BuiltInParameter.CURVE_ELEM_LENGTH),
-                            Height = GetSafeParameterValue(wall, BuiltInParameter.WALL_USER_HEIGHT_PARAM)
-                        };
-                        
-                        wallItems.Add(wallItem);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log error but continue processing other walls
-                        System.Diagnostics.Debug.WriteLine($"Error processing wall {wall?.Id}: {ex.Message}");
-                        
-                        // Add a minimal wall item so analysis can continue
-                        if (wall?.Id != null)
-                        {
-                            wallItems.Add(new WallItem
-                            {
-                                Id = wall.Id,
-                                Name = $"Wall {wall.Id} (Error)",
-                                LevelName = "Unknown",
-                                WallTypeName = "Unknown",
-                                Length = 0,
-                                Height = 0
-                            });
-                        }
-                    }
-                }
+                // Run analysis through controller - use filtered elements from "Other Elements" panel
+                // Convert filtered Element objects back to WallItem objects for analysis
+                var wallItems = ConvertElementsToWallItems(_filteredElements ?? new List<Element>());
 
-                var results = _controller.RunAnalysis(_filteredRooms, wallItems);
+                // Get window handle for save dialog ownership
+                var windowHelper = new WindowInteropHelper(this);
+                var results = _controller.RunAnalysis(_filteredRooms, wallItems, windowHelper.Handle);
                 
                 // Show results
                 var totalRooms = results.Count;

@@ -6,6 +6,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using RoomsManagerAddin.Services;
+using RoomsManagerAddin.Services.Categories.Walls;
 using RoomsManagerAddin.Models;
 using System.Windows.Interop;
 
@@ -62,13 +63,14 @@ namespace RoomsManagerAddin.Commands
             services[typeof(WallProcessingService)] = new WallProcessingService();
             services[typeof(RoomProcessingService)] = new RoomProcessingService();
             
-            // Add CollisionAnalysisService last since it depends on others
+            // Add new WallBoundaryAnalysisService 
+            services[typeof(WallBoundaryAnalysisService)] = new WallBoundaryAnalysisService(
+                services[typeof(ParameterUpdateService)] as ParameterUpdateService
+            );
+            
+            // Add CollisionAnalysisService last since it depends on WallBoundaryAnalysisService
             services[typeof(CollisionAnalysisService)] = new CollisionAnalysisService(
-                null, // logger
-                services[typeof(GeometryService)] as GeometryService,
-                services[typeof(ParameterUpdateService)] as ParameterUpdateService,
-                services[typeof(WallProcessingService)] as WallProcessingService,
-                services[typeof(RoomProcessingService)] as RoomProcessingService
+                services[typeof(WallBoundaryAnalysisService)] as WallBoundaryAnalysisService
             );
 
             return services;

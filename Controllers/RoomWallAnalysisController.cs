@@ -5,6 +5,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using RoomsManagerAddin.Models;
 using RoomsManagerAddin.Services;
+using RoomsManagerAddin.Services.Categories.Walls;
 
 namespace RoomsManagerAddin.Controllers
 {
@@ -18,10 +19,8 @@ namespace RoomsManagerAddin.Controllers
         private readonly ElementCollectorService _elementCollectorService;
 
         // Services used by analysis
-        private readonly GeometryService _geometryService;
         private readonly ParameterUpdateService _parameterUpdateService;
-        private readonly WallProcessingService _wallProcessingService;
-        private readonly RoomProcessingService _roomProcessingService;
+        private readonly WallBoundaryAnalysisService _wallBoundaryAnalysisService;
         private readonly CollisionAnalysisService _collisionAnalysisService;
         private readonly LoggingService _loggingService;
         private readonly RoomFilterService _roomFilterService;
@@ -31,20 +30,15 @@ namespace RoomsManagerAddin.Controllers
             _document = document;
             _elementCollectorService = new ElementCollectorService();
 
-            _geometryService = new GeometryService();
             _parameterUpdateService = new ParameterUpdateService();
-            _wallProcessingService = new WallProcessingService();
-            _roomProcessingService = new RoomProcessingService();
             _loggingService = new LoggingService();
             _roomFilterService = new RoomFilterService(_document, _loggingService);
 
-            _collisionAnalysisService = new CollisionAnalysisService(
-                null,
-                _geometryService,
-                _parameterUpdateService,
-                _wallProcessingService,
-                _roomProcessingService
-            );
+            // Initialize new wall boundary analysis service
+            _wallBoundaryAnalysisService = new WallBoundaryAnalysisService(_parameterUpdateService);
+            
+            // Initialize collision analysis service with wall boundary service
+            _collisionAnalysisService = new CollisionAnalysisService(_wallBoundaryAnalysisService);
         }
 
         public InitialDataResult LoadInitialData()
@@ -115,11 +109,28 @@ namespace RoomsManagerAddin.Controllers
             return result;
         }
 
-        public List<RoomCollisionResult> RunAnalysis(List<RoomItem> roomItems, List<WallItem> wallItems)
+        public List<RoomCollisionResult> RunAnalysis(List<RoomItem> roomItems, List<WallItem> wallItems, IntPtr? ownerWindowHandle = null)
         {
+            // Initialize debug logging with save dialog
+            var logPath = _loggingService.InitializeDebugLogging(ownerWindowHandle);
+            if (!string.IsNullOrEmpty(logPath))
+            {
+                _loggingService.WriteToLog($"Analysis started - Log file: {logPath}");
+                _loggingService.WriteToLog($"Analyzing {roomItems.Count} rooms and {wallItems.Count} walls");
+            }
+
             // Convert back to Revit elements for analysis
             var rooms = roomItems.Select(ri => _document.GetElement(ri.Id) as Room).Where(r => r != null).ToList();
             var walls = wallItems.Select(wi => _document.GetElement(wi.Id) as Wall).Where(w => w != null).ToList();
+            
+            // DEBUG: Log wall conversion results
+            _loggingService.WriteToLog($"CONTROLLER: Converting {wallItems.Count} WallItems to Wall objects");
+            _loggingService.WriteToLog($"CONTROLLER: Successfully converted {walls.Count} Wall objects");
+            if (walls.Any())
+            {
+                var firstFewWallIds = walls.Take(5).Select(w => w.Id.IntegerValue.ToString()).ToList();
+                _loggingService.WriteToLog($"CONTROLLER: First 5 converted wall IDs: {string.Join(", ", firstFewWallIds)}");
+            }
 
             // Simple progress callback (no UI progress window for now)
             Action<string, string, int, int, int, int> progressCallback = 
@@ -129,13 +140,16 @@ namespace RoomsManagerAddin.Controllers
                     System.Diagnostics.Debug.WriteLine($"{title}: {message} ({overallCurrent}/{overallTotal})");
                 };
 
-            return _collisionAnalysisService.AnalyzeRoomCollisions(
+            var results = _collisionAnalysisService.AnalyzeRoomCollisions(
                 _document,
                 rooms,
                 walls,
                 _loggingService.WriteToLog,
                 progressCallback
             );
+
+            _loggingService.WriteToLog($"Analysis completed - {results.Count} results generated");
+            return results;
         }
 
         // New filtering system methods
