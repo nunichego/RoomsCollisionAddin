@@ -20,15 +20,20 @@ namespace RoomsManagerAddin
         #region Fields
         private Document _document;
         private RoomWallAnalysisController _controller;
+        private GenericElementController _elementController;
         private List<RoomItem> _roomItems;
-        private List<WallItem> _wallItems;
         private ElementCollectorService _elementCollector;
         private List<ParameterInfo> _availableParameters;
         private RoomFilterConfiguration _currentFilter;
         
         // Filtered data
         private List<RoomItem> _filteredRooms;
-        private List<WallItem> _filteredWalls;
+        
+        // Element panel data
+        private List<CategoryInfo> _availableCategories;
+        private List<ParameterInfo> _availableElementParameters;
+        private ElementFilterConfiguration _currentElementFilter;
+        private List<Element> _filteredElements;
         #endregion
 
         #region Constructor
@@ -37,6 +42,7 @@ namespace RoomsManagerAddin
             _document = document;
             _elementCollector = new ElementCollectorService();
             _controller = new RoomWallAnalysisController(document);
+            _elementController = new GenericElementController(document);
             _availableParameters = _controller.GetAvailableRoomParameters();
             _currentFilter = _controller.CreateFilterConfiguration("Room Filter");
 
@@ -55,17 +61,20 @@ namespace RoomsManagerAddin
             {
                 StatusLabel.Content = "Loading data...";
                 
-                // Load data through controller
+                // Load room data through controller
                 var data = _controller.LoadInitialData();
                 _roomItems = data.Rooms;
-                _wallItems = data.Walls;
                 _filteredRooms = new List<RoomItem>(_roomItems);
-                _filteredWalls = new List<WallItem>(_wallItems);
+                
+                // Load element categories
+                _availableCategories = _elementController.GetAvailableCategories();
+                _availableElementParameters = new List<ParameterInfo>();
+                _filteredElements = new List<Element>();
                 
                 // Populate UI
                 PopulateFilterDropdowns();
-                UpdateWallList();
-                UpdateCounters();
+                PopulateElementCategoryDropdown();
+                UpdateElementCounters();
                 
                 StatusLabel.Content = "Ready";
             }
@@ -78,21 +87,26 @@ namespace RoomsManagerAddin
 
         private void SetupEventHandlers()
         {
-            // Wall filters
-            WallLevelFilter.SelectionChanged += (s, e) => ApplyWallFilters();
-            WallTypeFilter.SelectionChanged += (s, e) => ApplyWallFilters();
+            // Element category selection
+            ElementCategoryCombo.SelectionChanged += (s, e) => OnElementCategoryChanged();
             
-            // Room filters removed - using advanced filters only
+            // Room filter events
             MainOperatorCombo.SelectionChanged += (s, e) => OnMainOperatorChanged();
             
-            // Filter buttons
+            // Room filter buttons
             AddRuleButton.Click += (s, e) => AddNewRule();
             AddSetButton.Click += (s, e) => AddNewSet();
             ClearFiltersButton.Click += (s, e) => ClearAllFilters();
             FilterStatusAddRuleButton.Click += (s, e) => AddNewRule();
             
-            // List selection events
-            WallsListBox.SelectionChanged += (s, e) => UpdateWallDetails();
+            // Element filter events
+            ElementMainOperatorCombo.SelectionChanged += (s, e) => OnElementMainOperatorChanged();
+            
+            // Element filter buttons
+            ElementAddRuleButton.Click += (s, e) => AddNewElementRule();
+            ElementAddSetButton.Click += (s, e) => AddNewElementSet();
+            ElementClearFiltersButton.Click += (s, e) => ClearAllElementFilters();
+            ElementFilterStatusAddRuleButton.Click += (s, e) => AddNewElementRule();
 
             // Analysis buttons
             RunAnalysisButton.Click += RunAnalysisButton_Click;
@@ -101,51 +115,109 @@ namespace RoomsManagerAddin
 
         private void PopulateFilterDropdowns()
         {
-            // Wall level filter
-            var wallLevels = _wallItems.Select(w => w.LevelName).Distinct().OrderBy(l => l).ToList();
-            wallLevels.Insert(0, "All Levels");
-            WallLevelFilter.ItemsSource = wallLevels;
-            WallLevelFilter.SelectedIndex = 0;
-            
-            // Wall type filter
-            var wallTypes = _wallItems.Select(w => w.WallTypeName).Distinct().OrderBy(t => t).ToList();
-            wallTypes.Insert(0, "All Types");
-            WallTypeFilter.ItemsSource = wallTypes;
-            WallTypeFilter.SelectedIndex = 0;
-            
-            // Quick filters removed
+            // Room filtering dropdowns would be here if needed
+            // Currently using advanced filtering only
         }
-        #endregion
 
-        #region Filtering
-        private void ApplyWallFilters()
+        private void PopulateElementCategoryDropdown()
         {
             try
             {
-                var levelFilter = WallLevelFilter.SelectedItem as string;
-                var typeFilter = WallTypeFilter.SelectedItem as string;
+                // Add "Select Category" as the first item
+                var categoryItems = new List<string> { "Select Category" };
+                categoryItems.AddRange(_availableCategories.Select(c => c.Name));
                 
-                _filteredWalls = _controller.ApplyWallFilters(_wallItems, levelFilter, typeFilter);
-                UpdateWallList();
-                UpdateCounters();
+                ElementCategoryCombo.ItemsSource = categoryItems;
+                ElementCategoryCombo.SelectedIndex = 0;
+                
+                StatusLabel.Content = $"Loaded {_availableCategories.Count} element categories";
             }
             catch (Exception ex)
             {
-                StatusLabel.Content = $"Error applying wall filters: {ex.Message}";
+                StatusLabel.Content = $"Error loading categories: {ex.Message}";
             }
         }
         #endregion
 
-        #region UI Updates
-        private void UpdateWallList()
+        #region Element Category Selection
+        private void OnElementCategoryChanged()
         {
-            WallsListBox.ItemsSource = _filteredWalls.Select(w => $"{w.Name} ({w.LevelName})");
-            WallSummaryLabel.Content = $"Showing {_filteredWalls.Count} of {_wallItems.Count} walls";
+            try
+            {
+                var selectedIndex = ElementCategoryCombo.SelectedIndex;
+                if (selectedIndex <= 0) // "Select Category" selected
+                {
+                    ClearElementSelection();
+                    return;
+                }
+
+                var selectedCategoryName = ElementCategoryCombo.SelectedItem as string;
+                var selectedCategory = _availableCategories.FirstOrDefault(c => c.Name == selectedCategoryName);
+                
+                if (selectedCategory != null)
+                {
+                    StatusLabel.Content = $"Loading {selectedCategory.Name} elements...";
+                    
+                    // Select category in controller
+                    _elementController.SelectCategory(selectedCategory);
+                    
+                    // Update available parameters for this category
+                    _availableElementParameters = _elementController.AvailableParameters;
+                    
+                    // Create new filter configuration
+                    _currentElementFilter = _elementController.CreateFilterConfiguration($"{selectedCategory.Name} Filter");
+                    
+                    // Update filtered elements
+                    _filteredElements = _elementController.FilteredElements;
+                    
+                    // Update UI
+                    UpdateElementFilterUI();
+                    UpdateElementCounters();
+                    
+                    StatusLabel.Content = $"Selected {selectedCategory.Name}: {_filteredElements.Count} elements";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error selecting category: {ex.Message}";
+                MessageBox.Show($"Error selecting category: {ex.Message}", "RoomDataSync Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private void UpdateCounters()
+        private void ClearElementSelection()
         {
-            WallsCountLabel.Content = $"Walls: {_filteredWalls.Count}";
+            _elementController.ClearCategory();
+            _availableElementParameters.Clear();
+            _filteredElements.Clear();
+            _currentElementFilter = null;
+            
+            UpdateElementFilterUI();
+            UpdateElementCounters();
+            
+            StatusLabel.Content = "No element category selected";
+        }
+        #endregion
+
+        #region UI Updates        
+        private void UpdateElementCounters()
+        {
+            try
+            {
+                if (_elementController.SelectedCategory == null)
+                {
+                    ElementCountText.Text = "Elements: 0 of 0";
+                    return;
+                }
+
+                var totalCount = _elementController.AllElements.Count;
+                var filteredCount = _filteredElements?.Count ?? 0;
+                
+                ElementCountText.Text = $"Elements: {filteredCount} of {totalCount}";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error updating element counters: {ex.Message}";
+            }
         }
 
         private void ApplyRoomFilters()
@@ -171,16 +243,26 @@ namespace RoomsManagerAddin
             }
         }
 
-        private void UpdateWallDetails()
+        private void ApplyElementFilters()
         {
-            if (WallsListBox.SelectedIndex >= 0 && WallsListBox.SelectedIndex < _filteredWalls.Count)
+            try
             {
-                var wall = _filteredWalls[WallsListBox.SelectedIndex];
-                WallDetailsTextBlock.Text = $"Name: {wall.Name}\nLevel: {wall.LevelName}\nType: {wall.WallTypeName}\nLength: {wall.Length:F2} ft";
+                // Apply advanced filter if rules exist
+                if (_currentElementFilter?.RootFilterSet?.Items?.Any() == true)
+                {
+                    _filteredElements = _elementController.ApplyAdvancedFilter(_currentElementFilter);
+                }
+                else
+                {
+                    // No filters - show all elements
+                    _filteredElements = _elementController.AllElements;
+                }
+                
+                UpdateElementCounters();
             }
-            else
+            catch (Exception ex)
             {
-                WallDetailsTextBlock.Text = "";
+                StatusLabel.Content = $"Element filter error: {ex.Message}";
             }
         }
         
@@ -248,6 +330,53 @@ namespace RoomsManagerAddin
                     {
                         var setUI = CreateFilterSetUI(filterSet);
                         RulesContainer.Children.Add(setUI);
+                    }
+                }
+            }
+        }
+        
+        private void UpdateElementFilterUI()
+        {
+            var hasRules = _currentElementFilter?.RootFilterSet?.Items?.Any() == true;
+            
+            // Show/hide the element filter container
+            ElementMainFilterContainer.Visibility = hasRules ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            
+            // Show/hide the Element Filter Status Add Rule button (opposite of main container)
+            ElementFilterStatusAddRuleButton.Visibility = hasRules ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible;
+            
+            if (hasRules)
+            {
+                // Update element operator combo value
+                ElementMainOperatorCombo.SelectedIndex = _currentElementFilter?.RootFilterSet?.Operator == LogicalOperator.And ? 0 : 1;
+                
+                // Update element container border color based on operator
+                ElementMainFilterContainer.BorderBrush = _currentElementFilter.RootFilterSet.Operator == LogicalOperator.And ?
+                    new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 124, 16)) :  // Green for AND
+                    new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 212));   // Blue for OR
+            }
+            
+            // Rebuild element rules UI
+            RebuildElementRulesUI();
+        }
+        
+        private void RebuildElementRulesUI()
+        {
+            ElementRulesContainer.Children.Clear();
+            
+            if (_currentElementFilter?.RootFilterSet?.Items != null)
+            {
+                foreach (var item in _currentElementFilter.RootFilterSet.Items)
+                {
+                    if (item is ElementFilterRule rule)
+                    {
+                        var ruleUI = CreateElementRuleUI(rule);
+                        ElementRulesContainer.Children.Add(ruleUI);
+                    }
+                    else if (item is FilterSet filterSet)
+                    {
+                        var setUI = CreateElementFilterSetUI(filterSet);
+                        ElementRulesContainer.Children.Add(setUI);
                     }
                 }
             }
@@ -673,6 +802,387 @@ namespace RoomsManagerAddin
         
         #endregion
 
+        #region Element Filter Event Handlers
+        
+        private void OnElementMainOperatorChanged()
+        {
+            if (_currentElementFilter?.RootFilterSet != null)
+            {
+                _currentElementFilter.RootFilterSet.Operator = ElementMainOperatorCombo.SelectedIndex == 0 ? LogicalOperator.And : LogicalOperator.Or;
+                
+                // Update element container border color based on operator
+                ElementMainFilterContainer.BorderBrush = _currentElementFilter.RootFilterSet.Operator == LogicalOperator.And ?
+                    new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 124, 16)) :  // Green for AND
+                    new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 212));   // Blue for OR
+                
+                ApplyElementFilters();
+            }
+        }
+        
+        private void AddNewElementRule()
+        {
+            if (_availableElementParameters?.Any() == true && _currentElementFilter != null)
+            {
+                var rule = new ElementFilterRule
+                {
+                    Parameter = _availableElementParameters.First(),
+                    Operator = FilterOperator.Equals,
+                    Value = ""
+                };
+                
+                _currentElementFilter.RootFilterSet.Items.Add(rule);
+                UpdateElementFilterUI(); // This will show the other controls now that we have rules
+                ApplyElementFilters();
+            }
+        }
+        
+        private void AddNewElementSet()
+        {
+            if (_currentElementFilter != null)
+            {
+                var newSet = new FilterSet
+                {
+                    Operator = LogicalOperator.And,
+                    Items = new List<IFilterItem>()
+                };
+                
+                // Add initial rule to new set
+                if (_availableElementParameters?.Any() == true)
+                {
+                    var initialRule = new ElementFilterRule
+                    {
+                        Parameter = _availableElementParameters.First(),
+                        Operator = FilterOperator.Equals,
+                        Value = ""
+                    };
+                    newSet.Items.Add(initialRule);
+                }
+                
+                _currentElementFilter.RootFilterSet.Items.Add(newSet);
+                UpdateElementFilterUI();
+                ApplyElementFilters();
+            }
+        }
+        
+        private void ClearAllElementFilters()
+        {
+            if (_currentElementFilter != null)
+            {
+                _currentElementFilter.RootFilterSet.Items.Clear();
+                UpdateElementFilterUI();
+                ApplyElementFilters();
+            }
+        }
+
+        // Full element rule UI creation - mirrors the room rule creation exactly
+        private FrameworkElement CreateElementRuleUI(ElementFilterRule rule)
+        {
+            var rulePanel = new StackPanel { Orientation = Orientation.Vertical, Margin = new Thickness(0, 0, 0, 12) };
+            
+            // Top row: Category and Parameter
+            var topGrid = new System.Windows.Controls.Grid { Margin = new Thickness(0, 0, 0, 8) };
+            topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            
+            // Category (shows selected category name)
+            var categoryCombo = new ComboBox { Style = (Style)FindResource("ModernComboBox"), Margin = new Thickness(0, 0, 8, 0), IsEnabled = false };
+            categoryCombo.Items.Add(_elementController.SelectedCategory?.Name ?? "Elements");
+            categoryCombo.SelectedIndex = 0;
+            System.Windows.Controls.Grid.SetColumn(categoryCombo, 0);
+            topGrid.Children.Add(categoryCombo);
+            
+            // Parameter dropdown
+            var parameterCombo = new ComboBox { Style = (Style)FindResource("ModernComboBox") };
+            foreach (var param in _availableElementParameters)
+            {
+                parameterCombo.Items.Add(param.Name);
+            }
+            parameterCombo.SelectedItem = rule.Parameter?.Name;
+            parameterCombo.SelectionChanged += (s, e) =>
+            {
+                rule.Parameter = _availableElementParameters.FirstOrDefault(p => p.Name == parameterCombo.SelectedItem?.ToString());
+                ApplyElementFilters();
+            };
+            System.Windows.Controls.Grid.SetColumn(parameterCombo, 1);
+            topGrid.Children.Add(parameterCombo);
+            
+            rulePanel.Children.Add(topGrid);
+            
+            // Bottom row: Operator, Value, Delete
+            var bottomGrid = new System.Windows.Controls.Grid();
+            bottomGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            bottomGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            bottomGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            
+            // Operator
+            var operatorCombo = new ComboBox { Style = (Style)FindResource("ModernComboBox"), Margin = new Thickness(0, 0, 8, 0) };
+            UpdateElementOperatorCombo(rule, operatorCombo);
+            operatorCombo.SelectionChanged += (s, e) =>
+            {
+                rule.Operator = GetOperatorFromDisplayText(operatorCombo.SelectedItem?.ToString());
+                ApplyElementFilters();
+            };
+            System.Windows.Controls.Grid.SetColumn(operatorCombo, 0);
+            bottomGrid.Children.Add(operatorCombo);
+            
+            // Value
+            var valueTextBox = new TextBox { Style = (Style)FindResource("ModernTextBox"), Text = rule.Value ?? "", Margin = new Thickness(0, 0, 8, 0) };
+            valueTextBox.TextChanged += (s, e) =>
+            {
+                rule.Value = valueTextBox.Text;
+                ApplyElementFilters();
+            };
+            System.Windows.Controls.Grid.SetColumn(valueTextBox, 1);
+            bottomGrid.Children.Add(valueTextBox);
+            
+            // Delete button
+            var deleteButton = new Button { Style = (Style)FindResource("DeleteButton") };
+            deleteButton.Click += (s, e) =>
+            {
+                _currentElementFilter.RootFilterSet.Items.Remove(rule);
+                UpdateElementFilterUI();
+                ApplyElementFilters();
+            };
+            System.Windows.Controls.Grid.SetColumn(deleteButton, 2);
+            bottomGrid.Children.Add(deleteButton);
+            
+            rulePanel.Children.Add(bottomGrid);
+            return rulePanel;
+        }
+
+        private FrameworkElement CreateElementFilterSetUI(FilterSet filterSet)
+        {
+            var border = new Border
+            {
+                BorderThickness = new Thickness(2),
+                CornerRadius = new CornerRadius(3),
+                Margin = new Thickness(0, 0, 0, 8),
+                Padding = new Thickness(8),
+                Background = Brushes.White
+            };
+            
+            // Set border color based on operator
+            border.BorderBrush = filterSet.Operator == LogicalOperator.And ? 
+                new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 124, 16)) : 
+                new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 212));
+            
+            var setPanel = new StackPanel { Orientation = Orientation.Vertical };
+            
+            // Set header with full functionality - using Grid for proper alignment
+            var headerGrid = new System.Windows.Controls.Grid { Margin = new Thickness(0, 0, 0, 8) };
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            
+            // Set operator combo
+            var setOperatorCombo = new ComboBox { Width = 180, Style = (Style)FindResource("RuleModeComboBox") };
+            setOperatorCombo.Items.Add("AND (All must be true)");
+            setOperatorCombo.Items.Add("OR (Any may be true)");
+            setOperatorCombo.SelectedIndex = filterSet.Operator == LogicalOperator.And ? 0 : 1;
+            setOperatorCombo.SelectionChanged += (s, e) =>
+            {
+                filterSet.Operator = setOperatorCombo.SelectedIndex == 0 ? LogicalOperator.And : LogicalOperator.Or;
+                border.BorderBrush = filterSet.Operator == LogicalOperator.And ?
+                    new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 124, 16)) :
+                    new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 212));
+                ApplyElementFilters();
+            };
+            System.Windows.Controls.Grid.SetColumn(setOperatorCombo, 0);
+            headerGrid.Children.Add(setOperatorCombo);
+            
+            // Right-aligned buttons panel
+            var buttonsPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            
+            // Create container for set rules
+            var setRulesContainer = new StackPanel { Orientation = Orientation.Vertical };
+            
+            // Add Rule to Set button
+            var addRuleToSetButton = new Button { Content = "Add Rule", Style = (Style)FindResource("ModernButton"), Margin = new Thickness(0, 0, 4, 0) };
+            addRuleToSetButton.Click += (s, e) => AddElementRuleToSet(filterSet, setRulesContainer);
+            buttonsPanel.Children.Add(addRuleToSetButton);
+            
+            // Add Set to Set button (disabled for 1 level depth limit)
+            var addSetToSetButton = new Button { Content = "Add Set", Style = (Style)FindResource("ModernButton"), Margin = new Thickness(0, 0, 4, 0) };
+            addSetToSetButton.IsEnabled = false; // Only 1 level of nesting
+            addSetToSetButton.ToolTip = "Only one level of nesting allowed";
+            buttonsPanel.Children.Add(addSetToSetButton);
+            
+            // Delete Set button
+            var deleteSetButton = new Button { Style = (Style)FindResource("DeleteButton") };
+            deleteSetButton.Click += (s, e) =>
+            {
+                _currentElementFilter.RootFilterSet.Items.Remove(filterSet);
+                UpdateElementFilterUI();
+                ApplyElementFilters();
+            };
+            buttonsPanel.Children.Add(deleteSetButton);
+            
+            System.Windows.Controls.Grid.SetColumn(buttonsPanel, 2);
+            headerGrid.Children.Add(buttonsPanel);
+            
+            setPanel.Children.Add(headerGrid);
+            
+            // Set rules container
+            setPanel.Children.Add(setRulesContainer);
+            
+            // Build rules UI for this set
+            RebuildElementSetRulesUI(filterSet, setRulesContainer);
+            
+            border.Child = setPanel;
+            return border;
+        }
+        
+        private void AddElementRuleToSet(FilterSet filterSet, StackPanel container)
+        {
+            if (_availableElementParameters?.Any() == true)
+            {
+                var rule = new ElementFilterRule
+                {
+                    Parameter = _availableElementParameters.First(),
+                    Operator = FilterOperator.Equals,
+                    Value = ""
+                };
+                
+                filterSet.Items.Add(rule);
+                RebuildElementSetRulesUI(filterSet, container);
+                ApplyElementFilters();
+            }
+        }
+        
+        private void RebuildElementSetRulesUI(FilterSet filterSet, StackPanel container)
+        {
+            container.Children.Clear();
+            
+            if (filterSet?.Items != null && filterSet.Items.Any())
+            {
+                foreach (var item in filterSet.Items)
+                {
+                    if (item is ElementFilterRule rule)
+                    {
+                        var ruleUI = CreateElementSetRuleUI(rule, filterSet, container);
+                        container.Children.Add(ruleUI);
+                    }
+                    // Note: Nested sets not supported at this level (1 level limit)
+                }
+            }
+            else
+            {
+                // Empty state
+                var emptyPanel = new Border
+                {
+                    Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(250, 250, 250)),
+                    BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(224, 224, 224)),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(2),
+                    Padding = new Thickness(12),
+                    Margin = new Thickness(0, 6, 0, 0)
+                };
+                
+                var emptyText = new TextBlock 
+                { 
+                    Text = "No rules in this set - click 'Add Rule' to add conditions",
+                    FontStyle = FontStyles.Italic,
+                    FontSize = 11,
+                    Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(136, 136, 136)),
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+                
+                emptyPanel.Child = emptyText;
+                container.Children.Add(emptyPanel);
+            }
+        }
+        
+        private FrameworkElement CreateElementSetRuleUI(ElementFilterRule rule, FilterSet parentSet, StackPanel parentContainer)
+        {
+            var rulePanel = new StackPanel { Orientation = Orientation.Vertical, Margin = new Thickness(0, 0, 0, 6) };
+            
+            // Top row: Category and Parameter
+            var topGrid = new System.Windows.Controls.Grid { Margin = new Thickness(0, 0, 0, 6) };
+            topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            
+            // Category (shows selected category name)
+            var categoryCombo = new ComboBox { Style = (Style)FindResource("ModernComboBox"), Margin = new Thickness(0, 0, 8, 0), IsEnabled = false };
+            categoryCombo.Items.Add(_elementController.SelectedCategory?.Name ?? "Elements");
+            categoryCombo.SelectedIndex = 0;
+            System.Windows.Controls.Grid.SetColumn(categoryCombo, 0);
+            topGrid.Children.Add(categoryCombo);
+            
+            // Parameter dropdown
+            var parameterCombo = new ComboBox { Style = (Style)FindResource("ModernComboBox") };
+            foreach (var param in _availableElementParameters)
+            {
+                parameterCombo.Items.Add(param.Name);
+            }
+            parameterCombo.SelectedItem = rule.Parameter?.Name;
+            parameterCombo.SelectionChanged += (s, e) =>
+            {
+                rule.Parameter = _availableElementParameters.FirstOrDefault(p => p.Name == parameterCombo.SelectedItem?.ToString());
+                ApplyElementFilters();
+            };
+            System.Windows.Controls.Grid.SetColumn(parameterCombo, 1);
+            topGrid.Children.Add(parameterCombo);
+            
+            rulePanel.Children.Add(topGrid);
+            
+            // Bottom row: Operator, Value, Delete
+            var bottomGrid = new System.Windows.Controls.Grid();
+            bottomGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            bottomGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            bottomGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            
+            // Operator
+            var operatorCombo = new ComboBox { Style = (Style)FindResource("ModernComboBox"), Margin = new Thickness(0, 0, 8, 0) };
+            UpdateElementOperatorCombo(rule, operatorCombo);
+            operatorCombo.SelectionChanged += (s, e) =>
+            {
+                rule.Operator = GetOperatorFromDisplayText(operatorCombo.SelectedItem?.ToString());
+                ApplyElementFilters();
+            };
+            System.Windows.Controls.Grid.SetColumn(operatorCombo, 0);
+            bottomGrid.Children.Add(operatorCombo);
+            
+            // Value
+            var valueTextBox = new TextBox { Style = (Style)FindResource("ModernTextBox"), Text = rule.Value ?? "", Margin = new Thickness(0, 0, 8, 0) };
+            valueTextBox.TextChanged += (s, e) =>
+            {
+                rule.Value = valueTextBox.Text;
+                ApplyElementFilters();
+            };
+            System.Windows.Controls.Grid.SetColumn(valueTextBox, 1);
+            bottomGrid.Children.Add(valueTextBox);
+            
+            // Delete button
+            var deleteButton = new Button { Style = (Style)FindResource("DeleteButton") };
+            deleteButton.Click += (s, e) =>
+            {
+                parentSet.Items.Remove(rule);
+                RebuildElementSetRulesUI(parentSet, parentContainer);
+                ApplyElementFilters();
+            };
+            System.Windows.Controls.Grid.SetColumn(deleteButton, 2);
+            bottomGrid.Children.Add(deleteButton);
+            
+            rulePanel.Children.Add(bottomGrid);
+            return rulePanel;
+        }
+        
+        private void UpdateElementOperatorCombo(ElementFilterRule rule, ComboBox operatorCombo)
+        {
+            operatorCombo.Items.Clear();
+            if (rule.Parameter != null)
+            {
+                var operators = rule.Parameter.GetAvailableOperators();
+                foreach (var op in operators)
+                {
+                    operatorCombo.Items.Add(GetOperatorDisplayText(op));
+                }
+                operatorCombo.SelectedItem = GetOperatorDisplayText(rule.Operator);
+            }
+        }
+        
+        #endregion
+
         #region Event Handlers
         private void RunAnalysisButton_Click(object sender, RoutedEventArgs e)
         {
@@ -681,8 +1191,20 @@ namespace RoomsManagerAddin
                 StatusLabel.Content = "Running analysis...";
                 RunAnalysisButton.IsEnabled = false;
                 
-                // Run analysis through controller
-                var results = _controller.RunAnalysis(_filteredRooms, _filteredWalls);
+                // Run analysis through controller - currently only supports wall analysis
+                // For now, convert filtered elements to walls if they are walls, otherwise use empty list
+                var wallElements = _filteredElements?.OfType<Wall>().ToList() ?? new List<Wall>();
+                var wallItems = wallElements.Select(w => new WallItem
+                {
+                    Id = w.Id,
+                    Name = w.Name,
+                    LevelName = (w.Document.GetElement(w.LevelId) as Level)?.Name ?? "Unknown",
+                    WallTypeName = w.WallType?.Name ?? "Unknown",
+                    Length = w.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH)?.AsDouble() ?? 0,
+                    Height = w.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM)?.AsDouble() ?? 0
+                }).ToList();
+
+                var results = _controller.RunAnalysis(_filteredRooms, wallItems);
                 
                 // Show results
                 var totalRooms = results.Count;

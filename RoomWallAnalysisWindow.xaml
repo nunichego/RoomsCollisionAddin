@@ -189,75 +189,73 @@
                 </ScrollViewer>
             </GroupBox>
 
-            <!-- Right: Walls panel -->
-            <GroupBox x:Name="RightPanelGroupBox" Grid.Column="1" Header="Walls" 
+            <!-- Right: Other Elements panel -->
+            <GroupBox x:Name="RightPanelGroupBox" Grid.Column="1" Header="Other Elements" 
                       Margin="8,0,0,0" Padding="16" 
                       BorderBrush="#E0E0E0" BorderThickness="1" 
                       Background="White">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Orientation="Vertical">
-                        <!-- Wall Filter Controls -->
+                        <!-- Category Selection -->
                         <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
                                 CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
-                            <StackPanel>
-                                <TextBlock Text="Wall Filters" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
                                 
-                                <!-- Wall Level Filter -->
-                                <Grid Margin="0,0,0,8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Level:" VerticalAlignment="Center" FontSize="12"/>
-                                    <ComboBox x:Name="WallLevelFilter" Grid.Column="1" 
-                                              Style="{StaticResource ModernComboBox}"/>
-                                </Grid>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Element Category" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,4"/>
+                                    <ComboBox x:Name="ElementCategoryCombo" 
+                                              Style="{StaticResource ModernComboBox}"
+                                              Width="200" HorizontalAlignment="Left"/>
+                                    <TextBlock x:Name="ElementCountText" Text="Elements: 0" 
+                                              FontSize="11" Foreground="#888888" Margin="0,4,0,0"/>
+                                </StackPanel>
                                 
-                                <!-- Wall Type Filter -->
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="60"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Type:" VerticalAlignment="Center" FontSize="12"/>
-                                    <ComboBox x:Name="WallTypeFilter" Grid.Column="1" 
-                                              Style="{StaticResource ModernComboBox}"/>
-                                </Grid>
-                            </StackPanel>
+                                <Button x:Name="ElementFilterStatusAddRuleButton" Grid.Column="1" Content="Add Rule" 
+                                        Style="{StaticResource ModernButton}" VerticalAlignment="Center" 
+                                        MinWidth="80" Visibility="Visible"/>
+                            </Grid>
                         </Border>
 
-                        <!-- Wall Summary -->
-                        <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
-                                CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
+                        <!-- Main Element Filter Controls -->
+                        <Border x:Name="ElementMainFilterContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
+                                CornerRadius="4" Padding="16" Margin="0,0,0,16" Visibility="Collapsed">
                             <StackPanel>
-                                <Label x:Name="WallSummaryLabel" Content="Showing 0 of 0 walls" 
-                                       FontSize="12" Foreground="#666666" Padding="0"/>
-                                <Label x:Name="WallsCountLabel" Content="Walls: 0" 
-                                       FontSize="11" Foreground="#888888" Padding="0" Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Walls List -->
-                        <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" 
-                                CornerRadius="4" Padding="16">
-                            <StackPanel>
-                                <TextBlock Text="Walls" FontWeight="SemiBold" FontSize="13" 
-                                          Foreground="#333333" Margin="0,0,0,12"/>
-                                <ListBox x:Name="WallsListBox" MaxHeight="300" 
-                                         ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-                                
-                                <!-- Wall Details -->
-                                <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
-                                        CornerRadius="4" Padding="12" Margin="0,12,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Wall Details" FontWeight="SemiBold" FontSize="12" 
-                                                  Foreground="#333333" Margin="0,0,0,8"/>
-                                        <TextBlock x:Name="WallDetailsTextBlock" Text="Select a wall to view details" 
-                                                  FontSize="11" Foreground="#666666" TextWrapping="Wrap"/>
+                                <!-- Header with main logical operator -->
+                                <Grid Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <ComboBox x:Name="ElementMainOperatorCombo" Grid.Column="0" Width="200" SelectedIndex="0"
+                                              Style="{StaticResource RuleModeComboBox}">
+                                        <ComboBoxItem Content="AND (All must be true)"/>
+                                        <ComboBoxItem Content="OR (Any may be true)"/>
+                                    </ComboBox>
+                                    
+                                    <!-- Right-aligned buttons -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <Button x:Name="ElementAddRuleButton" Content="Add Rule" MinWidth="70" Margin="0,0,6,0"
+                                                Style="{StaticResource ModernButton}"/>
+                                        <Button x:Name="ElementAddSetButton" Content="Add Set" MinWidth="70" Margin="0,0,6,0"
+                                                Style="{StaticResource ModernButton}"/>
+                                        <Button x:Name="ElementClearFiltersButton" Content="Clear All" MinWidth="70"
+                                                Style="{StaticResource ModernButton}"/>
                                     </StackPanel>
-                                </Border>
+                                </Grid>
+
+                                <!-- Dynamic Rules Container -->
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
+                                    <StackPanel x:Name="ElementRulesContainer" Orientation="Vertical"/>
+                                </ScrollViewer>
                             </StackPanel>
                         </Border>
+
                     </StackPanel>
                 </ScrollViewer>
             </GroupBox>
