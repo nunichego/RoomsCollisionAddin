@@ -29,7 +29,7 @@ namespace RoomsManagerAddin.Services.Categories.Walls
             List<Wall> walls, 
             List<ParameterMappingConfiguration> parameterMappings,
             Action<string> writeToLog,
-            Action<string, string, int, int, int, int> showProgress)
+            ProgressReporter progressReporter)
         {
             var results = new List<RoomCollisionResult>();
             var wallRoomRelationships = new Dictionary<ElementId, List<Room>>(); // Track which rooms each wall bounds
@@ -61,12 +61,15 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                 foreach (var room in rooms)
                 {
                     roomIndex++;
-                    showProgress("Analyzing Room Boundaries", 
-                                $"Processing room {roomIndex}/{rooms.Count}: {room.Number} - {room.Name}", 
-                                roomIndex, rooms.Count, 
-                                10 + (int)((double)roomIndex / rooms.Count * 70), 100);
+                    var overallProgress = 0.1 + ((double)roomIndex / rooms.Count * 0.7); // 10% to 80%
+                    progressReporter.ReportProgress(
+                        "Room-Wall Analysis",
+                        "Analyzing Room Boundaries", 
+                        $"Processing room {roomIndex}/{rooms.Count}: {room.Number} - {room.Name}",
+                        (double)roomIndex / rooms.Count,
+                        overallProgress);
                     
-                    writeToLog($"--- ANALYZING ROOM BOUNDARIES: {room.Number} - {room.Name} ---");
+                    // Process room boundaries (detailed logging removed for performance)
                     
                     try
                     {
@@ -86,19 +89,12 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                             var wallTypes = new HashSet<string>();
                             var boundaryWallsCount = 0;
 
-                            writeToLog($"    → Analyzing {roomWalls.Count} boundary walls for room {room.Number}");
-                            writeToLog($"    → Total walls in analysis set: {walls.Count}");
-                            
-                            // DEBUG: Show first few wall IDs from analysis set for comparison
-                            var firstFewWallIds = walls.Take(5).Select(w => w.Id.Value.ToString()).ToList();
-                            writeToLog($"    → First 5 wall IDs in analysis set: {string.Join(", ", firstFewWallIds)}");
-                            
+                            // Process boundary walls for this room (no per-wall logging)
                             foreach (var wall in roomWalls)
                             {
                                 var wallType = wall.WallType?.Name ?? "Unknown";
                                 // Fix: Use ID comparison instead of object reference comparison
                                 var inAnalysisSet = walls.Any(w => w.Id.Equals(wall.Id));
-                                writeToLog($"      • Boundary Wall {wall.Id}: {wallType} - In analysis set: {inAnalysisSet}");
                                 
                                 // Only count walls that are in our analysis set
                                 if (inAnalysisSet)
@@ -125,17 +121,12 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                             var relatedWalls = roomWalls.Where(w => walls.Any(analysisWall => analysisWall.Id.Equals(w.Id))).Cast<Element>().ToList();
                             roomElementRelationships[room] = relatedWalls;
                             
-                            writeToLog($"    ✓ Found {roomWalls.Count} boundary walls ({boundaryWallsCount} in analysis set)");
-                            writeToLog($"    ✓ Wall types: {string.Join(", ", wallTypes)}");
+                            // Summary logging only
+                            // Room processed successfully (detailed logging removed)
                         }
                         else
                         {
-                            writeToLog($"    ⚠ No boundary walls found for room {room.Number} - {room.Name}");
-                            writeToLog($"      → This could indicate:");
-                            writeToLog($"        • Room is unbounded or invalid");
-                            writeToLog($"        • Room boundaries are non-wall elements (room separation lines, etc.)"); 
-                            writeToLog($"        • Room spans multiple levels");
-                            writeToLog($"        • Room calculation issues");
+                            // Room has no boundary walls (detailed logging removed)
                             
                             result.WallsColliding = 0;
                             result.WallTypes = new List<string>();
@@ -160,14 +151,14 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                         }
                         catch (Exception ex)
                         {
-                            writeToLog($"    ⚠ Could not get room geometry info: {ex.Message}");
+                            // Could not get room geometry (detailed logging removed)
                         }
 
                         results.Add(result);
                     }
                     catch (Exception ex)
                     {
-                        writeToLog($"  ✗ ERROR analyzing room {room.Name}: {ex.Message}");
+                        // Error analyzing room (detailed logging removed)
                         results.Add(new RoomCollisionResult
                         {
                             RoomName = room.Name,
@@ -178,7 +169,7 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                 }
 
                 // Set up progress callback for parameter mapping service
-                _parameterMappingExecutionService.SetProgressCallback(showProgress);
+                _parameterMappingExecutionService.SetProgressReporter(progressReporter.CreateSubReporter(0.8, 1.0));
 
                 // Execute room-to-element parameter mappings in batch (first)
                 _parameterMappingExecutionService.ExecuteRoomToElementMappingsBatch(roomElementRelationships, parameterMappings);
@@ -247,18 +238,18 @@ namespace RoomsManagerAddin.Services.Categories.Walls
             
             try
             {
-                writeToLog($"    → Getting boundary segments for room {room.Number} - {room.Name}");
+                // Getting boundary segments (detailed logging removed)
                 var boundarySegments = room.GetBoundarySegments(options);
                 
                 if (boundarySegments == null)
                 {
-                    writeToLog($"    ⚠ GetBoundarySegments returned null for room {room.Number}");
+                    // GetBoundarySegments returned null (detailed logging removed)
                     return boundaryWalls;
                 }
                 
                 if (boundarySegments.Count == 0)
                 {
-                    writeToLog($"    ⚠ GetBoundarySegments returned empty list for room {room.Number}");
+                    // GetBoundarySegments returned empty list (detailed logging removed)
                     return boundaryWalls;
                 }
 
@@ -292,7 +283,7 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                                 }
                                 elementTypeCounts[elementType]++;
                                 
-                                writeToLog($"      → Segment {totalSegments}: Element {element.Id} ({elementType})");
+                                // Segment processed (detailed logging removed)
                                 
                                 if (element is Wall wall)
                                 {
@@ -301,60 +292,36 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                                     if (!boundaryWalls.Any(w => w.Id.Equals(wall.Id)))
                                     {
                                         boundaryWalls.Add(wall);
-                                        writeToLog($"        ✓ Added Wall {wall.Id}: {wall.WallType?.Name ?? "Unknown"}");
-                                        
-                                        // Check wall properties for debugging
-                                        var roomBounding = wall.get_Parameter(BuiltInParameter.WALL_ATTR_ROOM_BOUNDING)?.AsInteger() == 1;
-                                        var wallFunction = wall.WallType?.Function.ToString() ?? "Unknown";
-                                        writeToLog($"        → Room Bounding: {roomBounding}, Function: {wallFunction}");
+                                        // Wall added to boundary list (detailed logging removed)
                                     }
                                     else
                                     {
-                                        writeToLog($"        ⟳ Wall {wall.Id} already in list (duplicate segment)");
+                                        // Wall already in list (duplicate segment, detailed logging removed)
                                     }
                                 }
                                 else
                                 {
                                     nonWallSegments++;
-                                    writeToLog($"        ⚠ Non-wall boundary element: {elementType}");
+                                    // Non-wall boundary element (detailed logging removed)
                                 }
                             }
                             else
                             {
-                                writeToLog($"      ⚠ Could not get element for segment {totalSegments}");
+                                // Could not get element for segment (detailed logging removed)
                             }
                         }
                         catch (Exception ex)
                         {
-                            writeToLog($"      ⚠ Could not process boundary segment {totalSegments}: {ex.Message}");
+                            // Could not process boundary segment (detailed logging removed)
                         }
                     }
                 }
                 
-                writeToLog($"    → Processed {segmentListCount} boundary loops, {totalSegments} total segments");
-                writeToLog($"    → Wall segments: {wallSegments}, Non-wall segments: {nonWallSegments}");
-                writeToLog($"    → Found {boundaryWalls.Count} unique boundary walls");
-                
-                // DEBUG: Show boundary element type distribution
-                if (elementTypeCounts.Any())
-                {
-                    writeToLog($"    → Boundary element types:");
-                    foreach (var typeCount in elementTypeCounts.OrderByDescending(kvp => kvp.Value))
-                    {
-                        writeToLog($"        • {typeCount.Key}: {typeCount.Value} segments");
-                    }
-                }
-                
-                // Log wall details for debugging
-                foreach (var wall in boundaryWalls)
-                {
-                    var wallType = wall.WallType?.Name ?? "Unknown";
-                    writeToLog($"      • Wall {wall.Id}: {wallType}");
-                }
+                // Summary logging removed for performance
             }
             catch (Exception ex)
             {
-                writeToLog($"    ✗ Error getting boundary segments for room {room.Number}: {ex.Message}");
+                // Error getting boundary segments (detailed logging removed)
             }
             
             return boundaryWalls;

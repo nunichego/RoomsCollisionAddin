@@ -125,13 +125,12 @@ namespace RoomsManagerAddin.Commands
                 var rooms = elementCollector.GetRooms(document);
                 var walls = elementCollector.GetWalls(document);
 
-                // Simple progress callback (will be replaced with proper progress window)
-                Action<string, string, int, int, int, int> progressCallback = 
-                    (title, message, stepCurrent, stepTotal, overallCurrent, overallTotal) =>
-                    {
-                        // TODO: Replace with actual progress window
-                        System.Diagnostics.Debug.WriteLine($"{title}: {message} ({overallCurrent}/{overallTotal})");
-                    };
+                // Simple progress reporter (will be replaced with proper progress window)
+                var progressReporter = new ProgressReporter(progressInfo =>
+                {
+                    // TODO: Replace with actual progress window
+                    System.Diagnostics.Debug.WriteLine($"{progressInfo.Title}: {progressInfo.Stage} - {progressInfo.Detail} ({progressInfo.OverallProgressPercentage:F0}%)");
+                });
 
                 // Run analysis with empty parameter mappings (this command doesn't use the UI)
                 var emptyParameterMappings = new List<ParameterMappingConfiguration>();
@@ -141,7 +140,7 @@ namespace RoomsManagerAddin.Commands
                     walls,
                     emptyParameterMappings,
                     loggingService.WriteToLog,
-                    progressCallback
+                    progressReporter
                 );
 
                 // Show results

@@ -18,7 +18,7 @@ namespace RoomsManagerAddin
     public class App : IExternalApplication
     {
         #region Constants
-        private const string PANEL_NAME = "RoomDataSync";
+        private const string PANEL_NAME = "AH RoomsDataSync (Demo)";
         private const string ASSEMBLY_PATH = "RoomsManagerAddin.dll";
         #endregion
 
@@ -108,8 +108,8 @@ namespace RoomsManagerAddin
             {
                 // Create button data
                 var buttonData = new PushButtonData(
-                    "RoomsWalls",
-                    "Rooms-Walls",
+                    "RoomsMapping",
+                    "RoomsMapping",
                     _assemblyPath,
                     "RoomsManagerAddin.Commands.RoomDataSyncCommand"
                 );
@@ -119,7 +119,7 @@ namespace RoomsManagerAddin
                 buttonData.LongDescription = "Performs comprehensive collision analysis between rooms and walls, updating room parameters with collision information.";
 
                 // Load icon
-                var icon = LoadIcon("plans_32_96dpi.png");
+                var icon = LoadIcon("room-32.png");
                 if (icon != null)
                 {
                     buttonData.LargeImage = icon;
@@ -153,6 +153,13 @@ namespace RoomsManagerAddin
                 buttonData.ToolTip = "Configure collision analysis settings and tolerance values";
                 buttonData.LongDescription = "Open settings dialog to configure collision detection tolerance, volume thresholds, and other analysis parameters.";
 
+                // Load icon
+                var icon = LoadIcon("setting-32.png");
+                if (icon != null)
+                {
+                    buttonData.LargeImage = icon;
+                }
+
                 // Create button
                 var button = panel.AddItem(buttonData) as PushButton;
             }
@@ -181,6 +188,13 @@ namespace RoomsManagerAddin
                 // Set button properties
                 buttonData.ToolTip = "Get help and documentation for RoomDataSync";
                 buttonData.LongDescription = "View help documentation, tutorials, and troubleshooting information for the RoomDataSync add-in.";
+
+                // Load icon
+                var icon = LoadIcon("help-32.png");
+                if (icon != null)
+                {
+                    buttonData.LargeImage = icon;
+                }
 
                 // Create button
                 var button = panel.AddItem(buttonData) as PushButton;

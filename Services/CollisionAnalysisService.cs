@@ -30,13 +30,13 @@ namespace RoomsManagerAddin.Services
             List<Wall> walls, 
             List<ParameterMappingConfiguration> parameterMappings,
             Action<string> writeToLog,
-            Action<string, string, int, int, int, int> showProgress)
+            ProgressReporter progressReporter)
         {
             writeToLog("=== COLLISION ANALYSIS SERVICE ===");
             writeToLog("Delegating to Wall Boundary Analysis Service for optimized room-wall analysis");
             
             // Delegate to the new boundary-based service
-            return _wallBoundaryService.AnalyzeRoomCollisions(document, rooms, walls, parameterMappings, writeToLog, showProgress);
+            return _wallBoundaryService.AnalyzeRoomCollisions(document, rooms, walls, parameterMappings, writeToLog, progressReporter);
         }
 
     }

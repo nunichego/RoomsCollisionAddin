@@ -15,7 +15,7 @@ namespace RoomsManagerAddin.Services
     {
         #region Fields
         private readonly Action<string> _writeToLog;
-        private Action<string, string, int, int, int, int> _showProgress;
+        private ProgressReporter _progressReporter;
         #endregion
 
         #region Constructor
@@ -27,11 +27,11 @@ namespace RoomsManagerAddin.Services
 
         #region Public Methods - Progress Setup
         /// <summary>
-        /// Set the progress callback for displaying progress bars
+        /// Set the progress reporter for displaying progress bars
         /// </summary>
-        public void SetProgressCallback(Action<string, string, int, int, int, int> showProgress)
+        public void SetProgressReporter(ProgressReporter progressReporter)
         {
-            _showProgress = showProgress;
+            _progressReporter = progressReporter;
         }
         #endregion
 
@@ -45,25 +45,15 @@ namespace RoomsManagerAddin.Services
             List<Element> relatedElements, 
             List<ParameterMappingConfiguration> mappings)
         {
-            _writeToLog($"*** ROOM-TO-ELEMENT MAPPINGS CALLED for room {room?.Number ?? "NULL"} ***");
-            
             if (room == null || mappings == null || !mappings.Any(m => m.IsEnabled && m.Direction == MappingDirection.RoomsToCategory))
-            {
-                _writeToLog($"    Skipping: room={room?.Number ?? "NULL"}, mappings={mappings?.Count ?? 0}, enabled room-to-category={mappings?.Count(m => m.IsEnabled && m.Direction == MappingDirection.RoomsToCategory) ?? 0}");
                 return;
-            }
 
             var enabledMappings = mappings
                 .Where(m => m.IsEnabled && m.Direction == MappingDirection.RoomsToCategory)
                 .ToList();
 
             if (!enabledMappings.Any())
-            {
-                _writeToLog($"    No enabled room-to-element mappings found");
                 return;
-            }
-
-            _writeToLog($"    → Executing {enabledMappings.Count} room-to-element mappings for room {room.Number}");
 
             foreach (var mapping in enabledMappings)
             {
@@ -96,7 +86,7 @@ namespace RoomsManagerAddin.Services
             _writeToLog($"Processing {enabledMappings.Count} mapping(s) for {roomElementRelationships.Count} rooms");
 
             // Phase 1: Collect all values (with progress)
-            _showProgress?.Invoke("Parameter Mapping", "Collecting room-to-element relationships...", 0, 2, 80, 90);
+            _progressReporter?.ReportProgress("Parameter Mapping", "Collecting Relationships", "Collecting room-to-element relationships...", 0.0, 0.8);
             
             var elementValueMappings = new Dictionary<ElementId, Dictionary<ParameterInfo, HashSet<string>>>();
             int roomIndex = 0;
@@ -112,9 +102,10 @@ namespace RoomsManagerAddin.Services
                 if (roomIndex % Math.Max(1, totalRooms / 20) == 0 || roomIndex == totalRooms)
                 {
                     var progressPercent = (int)((double)roomIndex / totalRooms * 50); // Collection is 50% of this phase
-                    _showProgress?.Invoke("Parameter Mapping", 
-                        $"Collecting relationships: Room {roomIndex}/{totalRooms} ({room.Number})", 
-                        roomIndex, totalRooms, 80 + progressPercent / 10, 90);
+                    // TODO: Update progress reporting
+                    // _showProgress?.Invoke("Parameter Mapping", 
+                    //     $"Collecting relationships: Room {roomIndex}/{totalRooms} ({room.Number})", 
+                    //     roomIndex, totalRooms, 80 + progressPercent / 10, 90);
                 }
 
                 foreach (var mapping in enabledMappings)
@@ -141,7 +132,7 @@ namespace RoomsManagerAddin.Services
             }
 
             // Phase 2: Apply collected values to elements (with progress)
-            _showProgress?.Invoke("Parameter Mapping", "Updating element parameters...", 1, 2, 85, 90);
+            _progressReporter?.ReportProgress("Parameter Mapping", "Updating Parameters", "Updating element parameters...", 0.0, 0.85);
             
             int elementIndex = 0;
             int totalElements = elementValueMappings.Count;
@@ -156,9 +147,10 @@ namespace RoomsManagerAddin.Services
                 if (elementIndex % Math.Max(1, totalElements / 10) == 0 || elementIndex == totalElements)
                 {
                     var progressPercent = (int)((double)elementIndex / totalElements * 50); // Application is 50% of this phase
-                    _showProgress?.Invoke("Parameter Mapping", 
-                        $"Updating elements: {elementIndex}/{totalElements} (Element {elementId})", 
-                        elementIndex, totalElements, 85 + progressPercent / 10, 90);
+                    // TODO: Update progress reporting
+                    // _showProgress?.Invoke("Parameter Mapping", 
+                    //     $"Updating elements: {elementIndex}/{totalElements} (Element {elementId})", 
+                    //     elementIndex, totalElements, 85 + progressPercent / 10, 90);
                 }
 
                 // Find the element
@@ -180,14 +172,6 @@ namespace RoomsManagerAddin.Services
                     var combinedValue = string.Join(mappingConfig.ValueSeparator ?? ", ", uniqueValues.OrderBy(v => v));
 
                     var success = SetParameterValueWithAccumulation(element, toParameter, combinedValue, mappingConfig.ValueSeparator, mappingConfig.OverrideExistingValues);
-                    if (success)
-                    {
-                        _writeToLog($"    ✓ Batch mapped '{combinedValue}' to element {elementId}.{toParameter.Name} ({uniqueValues.Count} unique values)");
-                    }
-                    else
-                    {
-                        _writeToLog($"    ✗ Failed to batch map to element {elementId}.{toParameter.Name}");
-                    }
                 }
             }
             
@@ -220,7 +204,7 @@ namespace RoomsManagerAddin.Services
             _writeToLog($"Processing {enabledMappings.Count} mapping(s) for {elementRoomRelationships.Count} elements");
 
             // Phase 1: Collect all values (with progress)
-            _showProgress?.Invoke("Parameter Mapping", "Collecting element-to-room relationships...", 0, 2, 90, 100);
+            _progressReporter?.ReportProgress("Parameter Mapping", "Element-to-Room Mapping", "Collecting element-to-room relationships...", 0.0, 0.9);
             
             var roomValueMappings = new Dictionary<Room, Dictionary<ParameterInfo, HashSet<string>>>();
             int elementIndex = 0;
@@ -237,9 +221,10 @@ namespace RoomsManagerAddin.Services
                 if (elementIndex % Math.Max(1, totalElements / 20) == 0 || elementIndex == totalElements)
                 {
                     var progressPercent = (int)((double)elementIndex / totalElements * 50); // Collection is 50% of this phase
-                    _showProgress?.Invoke("Parameter Mapping", 
-                        $"Collecting relationships: Element {elementIndex}/{totalElements} ({elementId})", 
-                        elementIndex, totalElements, 90 + progressPercent / 10, 100);
+                    // TODO: Update progress reporting
+                    // _showProgress?.Invoke("Parameter Mapping", 
+                    //     $"Collecting relationships: Element {elementIndex}/{totalElements} ({elementId})", 
+                    //     elementIndex, totalElements, 90 + progressPercent / 10, 100);
                 }
 
                 foreach (var mapping in enabledMappings)
@@ -266,7 +251,7 @@ namespace RoomsManagerAddin.Services
             }
 
             // Phase 2: Apply collected values to rooms (with progress)
-            _showProgress?.Invoke("Parameter Mapping", "Updating room parameters...", 1, 2, 95, 100);
+            _progressReporter?.ReportProgress("Parameter Mapping", "Updating Room Parameters", "Updating room parameters...", 0.0, 0.95);
             
             int roomIndex = 0;
             int totalRooms = roomValueMappings.Count;
@@ -281,9 +266,10 @@ namespace RoomsManagerAddin.Services
                 if (roomIndex % Math.Max(1, totalRooms / 10) == 0 || roomIndex == totalRooms)
                 {
                     var progressPercent = (int)((double)roomIndex / totalRooms * 50); // Application is 50% of this phase
-                    _showProgress?.Invoke("Parameter Mapping", 
-                        $"Updating rooms: {roomIndex}/{totalRooms} (Room {room.Number})", 
-                        roomIndex, totalRooms, 95 + progressPercent / 10, 100);
+                    // TODO: Update progress reporting
+                    // _showProgress?.Invoke("Parameter Mapping", 
+                    //     $"Updating rooms: {roomIndex}/{totalRooms} (Room {room.Number})", 
+                    //     roomIndex, totalRooms, 95 + progressPercent / 10, 100);
                 }
 
                 foreach (var paramMapping in parameterValues)
@@ -298,14 +284,6 @@ namespace RoomsManagerAddin.Services
                     var combinedValue = string.Join(mappingConfig.ValueSeparator ?? ", ", uniqueValues.OrderBy(v => v));
 
                     var success = SetParameterValueWithAccumulation(room, toParameter, combinedValue, mappingConfig.ValueSeparator, mappingConfig.OverrideExistingValues);
-                    if (success)
-                    {
-                        _writeToLog($"    ✓ Batch mapped '{combinedValue}' to room {room.Number}.{toParameter.Name} ({uniqueValues.Count} unique values)");
-                    }
-                    else
-                    {
-                        _writeToLog($"    ✗ Failed to batch map to room {room.Number}.{toParameter.Name}");
-                    }
                 }
             }
             
@@ -327,36 +305,22 @@ namespace RoomsManagerAddin.Services
                 // Get source value from room
                 var sourceValue = GetParameterValue(room, mapping.FromParameter);
                 if (string.IsNullOrEmpty(sourceValue))
-                {
-                    _writeToLog($"      ⚠ No source value for room parameter '{mapping.FromParameter.Name}'");
                     return;
-                }
 
                 // Handle multiple related elements with separator
                 var targetElements = relatedElements ?? new List<Element>();
                 if (!targetElements.Any())
-                {
-                    _writeToLog($"      ⚠ No related elements to update for room {room.Number}");
                     return;
-                }
 
                 // Update each related element
                 foreach (var element in targetElements)
                 {
-                    var success = SetParameterValueWithAccumulation(element, mapping.ToParameter, sourceValue, mapping.ValueSeparator, mapping.OverrideExistingValues);
-                    if (success)
-                    {
-                        _writeToLog($"      ✓ Mapped '{sourceValue}' from room {room.Number}.{mapping.FromParameter.Name} to element {element.Id}.{mapping.ToParameter.Name}");
-                    }
-                    else
-                    {
-                        _writeToLog($"      ✗ Failed to map to element {element.Id}.{mapping.ToParameter.Name}");
-                    }
+                    SetParameterValueWithAccumulation(element, mapping.ToParameter, sourceValue, mapping.ValueSeparator, mapping.OverrideExistingValues);
                 }
             }
             catch (Exception ex)
             {
-                _writeToLog($"      ✗ Error executing room-to-element mapping: {ex.Message}");
+                _writeToLog($"Error executing room-to-element mapping: {ex.Message}");
             }
         }
 
@@ -373,35 +337,21 @@ namespace RoomsManagerAddin.Services
                 // Get source value from element
                 var sourceValue = GetParameterValue(element, mapping.FromParameter);
                 if (string.IsNullOrEmpty(sourceValue))
-                {
-                    _writeToLog($"      ⚠ No source value for element {element.Id} parameter '{mapping.FromParameter.Name}'");
                     return;
-                }
 
                 // Handle multiple related rooms with separator
                 if (!relatedRooms.Any())
-                {
-                    _writeToLog($"      ⚠ No related rooms to update for element {element.Id}");
                     return;
-                }
 
                 // Update each related room
                 foreach (var room in relatedRooms)
                 {
-                    var success = SetParameterValueWithAccumulation(room, mapping.ToParameter, sourceValue, mapping.ValueSeparator, mapping.OverrideExistingValues);
-                    if (success)
-                    {
-                        _writeToLog($"      ✓ Mapped '{sourceValue}' from element {element.Id}.{mapping.FromParameter.Name} to room {room.Number}.{mapping.ToParameter.Name}");
-                    }
-                    else
-                    {
-                        _writeToLog($"      ✗ Failed to map to room {room.Number}.{mapping.ToParameter.Name}");
-                    }
+                    SetParameterValueWithAccumulation(room, mapping.ToParameter, sourceValue, mapping.ValueSeparator, mapping.OverrideExistingValues);
                 }
             }
             catch (Exception ex)
             {
-                _writeToLog($"      ✗ Error executing element-to-room mapping: {ex.Message}");
+                _writeToLog($"Error executing element-to-room mapping: {ex.Message}");
             }
         }
 
@@ -450,7 +400,7 @@ namespace RoomsManagerAddin.Services
             }
             catch (Exception ex)
             {
-                _writeToLog($"        ✗ Error getting parameter value '{parameterInfo.Name}': {ex.Message}");
+                _writeToLog($"Error getting parameter '{parameterInfo.Name}': {ex.Message}");
                 return string.Empty;
             }
         }
@@ -510,7 +460,7 @@ namespace RoomsManagerAddin.Services
             }
             catch (Exception ex)
             {
-                _writeToLog($"        ✗ Error setting parameter value '{parameterInfo.Name}': {ex.Message}");
+                _writeToLog($"Error setting parameter '{parameterInfo.Name}': {ex.Message}");
                 return false;
             }
         }
@@ -527,7 +477,6 @@ namespace RoomsManagerAddin.Services
                 // Check override behavior
                 if (!overrideExistingValues && !string.IsNullOrEmpty(existingValue))
                 {
-                    _writeToLog($"        ⏩ Skipping - parameter already has value '{existingValue}' and override disabled");
                     return true; // Consider this success since we're honoring the override setting
                 }
                 
@@ -563,12 +512,11 @@ namespace RoomsManagerAddin.Services
                 }
                 
                 parameter.Set(finalValue);
-                _writeToLog($"        → Final value: '{finalValue}'");
                 return true;
             }
             catch (Exception ex)
             {
-                _writeToLog($"        ✗ Error in string accumulation: {ex.Message}");
+                _writeToLog($"Error in parameter accumulation: {ex.Message}");
                 return false;
             }
         }
@@ -628,7 +576,7 @@ namespace RoomsManagerAddin.Services
             }
             catch (Exception ex)
             {
-                _writeToLog($"        ✗ Error setting parameter value '{parameterInfo.Name}': {ex.Message}");
+                _writeToLog($"Error setting parameter '{parameterInfo.Name}': {ex.Message}");
                 return false;
             }
         }

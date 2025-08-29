@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Forms;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using RoomsManagerAddin.Models;
 using RoomsManagerAddin.Services;
 using RoomsManagerAddin.Services.Categories.Walls;
+using RoomsManagerAddin.Windows;
 
 namespace RoomsManagerAddin.Controllers
 {
@@ -132,11 +134,14 @@ namespace RoomsManagerAddin.Controllers
                 _loggingService.WriteToLog($"CONTROLLER: First 5 converted wall IDs: {string.Join(", ", firstFewWallIds)}");
             }
 
-            // Create and show progress window
-            ProgressWindow progressWindow = null;
+            // Create and show modern progress window
+            ModernProgressWindow progressWindow = null;
+            List<RoomCollisionResult> results = null;
+            Exception analysisException = null;
+
             try
             {
-                progressWindow = new ProgressWindow();
+                progressWindow = new ModernProgressWindow();
                 if (ownerWindowHandle.HasValue)
                 {
                     var helper = new System.Windows.Interop.WindowInteropHelper(progressWindow);
@@ -144,29 +149,36 @@ namespace RoomsManagerAddin.Controllers
                 }
                 progressWindow.Show();
                 
-                // Progress callback with actual UI updates
-                Action<string, string, int, int, int, int> progressCallback = 
-                    (title, message, stepCurrent, stepTotal, overallCurrent, overallTotal) =>
-                    {
-                        _loggingService.WriteToLog($"{title}: {message} ({overallCurrent}/{overallTotal})");
-                        progressWindow?.UpdateProgress(title, title, message, stepCurrent, stepTotal, overallCurrent, overallTotal);
-                    };
+                // Create modern progress reporter with type-safe design
+                var progressReporter = new ProgressReporter(progressInfo =>
+                {
+                    _loggingService.WriteToLog($"{progressInfo.Title}: {progressInfo.Stage} - {progressInfo.Detail} ({progressInfo.OverallProgressPercentage:F0}%)");
+                    progressWindow?.UpdateProgress(progressInfo);
+                });
 
-                var results = _collisionAnalysisService.AnalyzeRoomCollisions(
+                // Run analysis with modern progress reporting (still on main thread for Revit API safety)
+                results = _collisionAnalysisService.AnalyzeRoomCollisions(
                     _document,
                     rooms,
                     walls,
                     parameterMappings,
                     _loggingService.WriteToLog,
-                    progressCallback
+                    progressReporter
                 );
 
                 _loggingService.WriteToLog($"Analysis completed - {results.Count} results generated");
                 return results;
             }
+            catch (Exception ex)
+            {
+                analysisException = ex;
+                _loggingService.WriteToLog($"Analysis failed: {ex.Message}");
+                throw;
+            }
             finally
             {
-                // Close progress window
+                // Allow progress window to close and then close it
+                progressWindow?.AllowClose();
                 progressWindow?.Close();
             }
         }

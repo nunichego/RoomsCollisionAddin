@@ -25,8 +25,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\icons\plans_16_96dpi.png" />
-    <EmbeddedResource Include="Resources\icons\plans_32_96dpi.png" />
+    <EmbeddedResource Include="Resources\icons\room-16.png" />
+    <EmbeddedResource Include="Resources\icons\room-32.png" />
+    <EmbeddedResource Include="Resources\icons\setting-16.png" />
+    <EmbeddedResource Include="Resources\icons\setting-32.png" />
+    <EmbeddedResource Include="Resources\icons\help-16.png" />
+    <EmbeddedResource Include="Resources\icons\help-32.png" />
   </ItemGroup>
 
   <!-- Exclude template files and drafts from build -->

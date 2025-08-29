@@ -15,7 +15,7 @@ namespace RoomsManagerAddin.Commands
         {
             try
             {
-                TaskDialog.Show("RoomDataSync Help", "What a time to be alive, huh?");
+                TaskDialog.Show("RoomDataSync Help", "Hi zusammen ;)");
 
                 return Result.Succeeded;
             }
