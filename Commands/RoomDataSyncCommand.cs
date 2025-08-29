@@ -57,15 +57,17 @@ namespace RoomsManagerAddin.Commands
             services[typeof(IConfigurationService)] = new ConfigurationService();
             services[typeof(GeometryService)] = new GeometryService();
             services[typeof(ElementCollectorService)] = new ElementCollectorService();
-            services[typeof(ParameterUpdateService)] = new ParameterUpdateService();
             services[typeof(ProgressService)] = new ProgressService();
-            services[typeof(LoggingService)] = new LoggingService();
+            var loggingService = new LoggingService();
+            services[typeof(LoggingService)] = loggingService;
             services[typeof(WallProcessingService)] = new WallProcessingService();
             services[typeof(RoomProcessingService)] = new RoomProcessingService();
             
-            // Add new WallBoundaryAnalysisService 
+            // Add new ParameterMappingExecutionService and WallBoundaryAnalysisService
+            var parameterMappingExecutionService = new ParameterMappingExecutionService(loggingService.WriteToLog);
+            services[typeof(ParameterMappingExecutionService)] = parameterMappingExecutionService;
             services[typeof(WallBoundaryAnalysisService)] = new WallBoundaryAnalysisService(
-                services[typeof(ParameterUpdateService)] as ParameterUpdateService
+                parameterMappingExecutionService
             );
             
             // Add CollisionAnalysisService last since it depends on WallBoundaryAnalysisService
@@ -131,11 +133,13 @@ namespace RoomsManagerAddin.Commands
                         System.Diagnostics.Debug.WriteLine($"{title}: {message} ({overallCurrent}/{overallTotal})");
                     };
 
-                // Run analysis
+                // Run analysis with empty parameter mappings (this command doesn't use the UI)
+                var emptyParameterMappings = new List<ParameterMappingConfiguration>();
                 var results = collisionService.AnalyzeRoomCollisions(
                     document, 
                     rooms, 
                     walls,
+                    emptyParameterMappings,
                     loggingService.WriteToLog,
                     progressCallback
                 );

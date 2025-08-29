@@ -19,7 +19,7 @@ namespace RoomsManagerAddin.Controllers
         private readonly ElementCollectorService _elementCollectorService;
 
         // Services used by analysis
-        private readonly ParameterUpdateService _parameterUpdateService;
+        private readonly ParameterMappingExecutionService _parameterMappingExecutionService;
         private readonly WallBoundaryAnalysisService _wallBoundaryAnalysisService;
         private readonly CollisionAnalysisService _collisionAnalysisService;
         private readonly LoggingService _loggingService;
@@ -30,12 +30,12 @@ namespace RoomsManagerAddin.Controllers
             _document = document;
             _elementCollectorService = new ElementCollectorService();
 
-            _parameterUpdateService = new ParameterUpdateService();
             _loggingService = new LoggingService();
+            _parameterMappingExecutionService = new ParameterMappingExecutionService(_loggingService.WriteToLog);
             _roomFilterService = new RoomFilterService(_document, _loggingService);
 
             // Initialize new wall boundary analysis service
-            _wallBoundaryAnalysisService = new WallBoundaryAnalysisService(_parameterUpdateService);
+            _wallBoundaryAnalysisService = new WallBoundaryAnalysisService(_parameterMappingExecutionService);
             
             // Initialize collision analysis service with wall boundary service
             _collisionAnalysisService = new CollisionAnalysisService(_wallBoundaryAnalysisService);
@@ -109,7 +109,7 @@ namespace RoomsManagerAddin.Controllers
             return result;
         }
 
-        public List<RoomCollisionResult> RunAnalysis(List<RoomItem> roomItems, List<WallItem> wallItems, IntPtr? ownerWindowHandle = null)
+        public List<RoomCollisionResult> RunAnalysis(List<RoomItem> roomItems, List<WallItem> wallItems, List<ParameterMappingConfiguration> parameterMappings, IntPtr? ownerWindowHandle = null)
         {
             // Initialize debug logging with save dialog
             var logPath = _loggingService.InitializeDebugLogging(ownerWindowHandle);
@@ -132,24 +132,43 @@ namespace RoomsManagerAddin.Controllers
                 _loggingService.WriteToLog($"CONTROLLER: First 5 converted wall IDs: {string.Join(", ", firstFewWallIds)}");
             }
 
-            // Simple progress callback (no UI progress window for now)
-            Action<string, string, int, int, int, int> progressCallback = 
-                (title, message, stepCurrent, stepTotal, overallCurrent, overallTotal) =>
+            // Create and show progress window
+            ProgressWindow progressWindow = null;
+            try
+            {
+                progressWindow = new ProgressWindow();
+                if (ownerWindowHandle.HasValue)
                 {
-                    // TODO: Replace with actual progress window
-                    System.Diagnostics.Debug.WriteLine($"{title}: {message} ({overallCurrent}/{overallTotal})");
-                };
+                    var helper = new System.Windows.Interop.WindowInteropHelper(progressWindow);
+                    helper.Owner = ownerWindowHandle.Value;
+                }
+                progressWindow.Show();
+                
+                // Progress callback with actual UI updates
+                Action<string, string, int, int, int, int> progressCallback = 
+                    (title, message, stepCurrent, stepTotal, overallCurrent, overallTotal) =>
+                    {
+                        _loggingService.WriteToLog($"{title}: {message} ({overallCurrent}/{overallTotal})");
+                        progressWindow?.UpdateProgress(title, title, message, stepCurrent, stepTotal, overallCurrent, overallTotal);
+                    };
 
-            var results = _collisionAnalysisService.AnalyzeRoomCollisions(
-                _document,
-                rooms,
-                walls,
-                _loggingService.WriteToLog,
-                progressCallback
-            );
+                var results = _collisionAnalysisService.AnalyzeRoomCollisions(
+                    _document,
+                    rooms,
+                    walls,
+                    parameterMappings,
+                    _loggingService.WriteToLog,
+                    progressCallback
+                );
 
-            _loggingService.WriteToLog($"Analysis completed - {results.Count} results generated");
-            return results;
+                _loggingService.WriteToLog($"Analysis completed - {results.Count} results generated");
+                return results;
+            }
+            finally
+            {
+                // Close progress window
+                progressWindow?.Close();
+            }
         }
 
         // New filtering system methods

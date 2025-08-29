@@ -275,6 +275,7 @@ namespace RoomsManagerAddin.Services
         public string ValueSeparator { get; set; }
         public bool IsEnabled { get; set; }
         public MappingDirection Direction { get; set; }
+        public bool OverrideExistingValues { get; set; }
     }
 
     /// <summary>

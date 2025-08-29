@@ -1950,9 +1950,12 @@ namespace RoomsManagerAddin
                 // Convert filtered Element objects back to WallItem objects for analysis
                 var wallItems = ConvertElementsToWallItems(_filteredElements ?? new List<Element>());
 
+                // Collect parameter mappings from UI
+                var parameterMappings = CollectParameterMappingsFromUI();
+
                 // Get window handle for save dialog ownership
                 var windowHelper = new WindowInteropHelper(this);
-                var results = _controller.RunAnalysis(_filteredRooms, wallItems, windowHelper.Handle);
+                var results = _controller.RunAnalysis(_filteredRooms, wallItems, parameterMappings, windowHelper.Handle);
                 
                 // Show results
                 var totalRooms = results.Count;
@@ -1983,6 +1986,308 @@ namespace RoomsManagerAddin
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+        #endregion
+
+        #region Parameter Mapping Collection
+        /// <summary>
+        /// Collects parameter mappings from the UI for execution during analysis
+        /// Collects from both main ComboBoxes and any dynamic rows
+        /// </summary>
+        private List<ParameterMappingConfiguration> CollectParameterMappingsFromUI()
+        {
+            var mappings = new List<ParameterMappingConfiguration>();
+
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("=== COLLECTING PARAMETER MAPPINGS FROM UI ===");
+                
+                // First, collect from main named ComboBoxes (the primary UI)
+                CollectFromMainComboBoxes(mappings);
+                
+                // Then, collect from any dynamic rows (if they exist)
+                CollectFromDynamicRows(mappings);
+
+                System.Diagnostics.Debug.WriteLine($"Total collected: {mappings.Count} parameter mapping(s)");
+                foreach (var mapping in mappings)
+                {
+                    var fromParam = mapping.FromParameter?.Name ?? "None";
+                    var toParam = mapping.ToParameter?.Name ?? "None";
+                    var separator = string.IsNullOrEmpty(mapping.ValueSeparator) ? "(none)" : $"'{mapping.ValueSeparator}'";
+                    System.Diagnostics.Debug.WriteLine($"  • {mapping.Direction}: {fromParam} → {toParam} [separator: {separator}]");
+                }
+
+                return mappings;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error collecting parameter mappings: {ex.Message}");
+                return new List<ParameterMappingConfiguration>();
+            }
+        }
+        
+        /// <summary>
+        /// Collect mappings from the main named ComboBoxes
+        /// </summary>
+        private void CollectFromMainComboBoxes(List<ParameterMappingConfiguration> mappings)
+        {
+            try
+            {
+                // Collect Rooms→Category mapping (if container is visible and has selections)
+                if (RoomsMappingContainer?.Visibility == System.Windows.Visibility.Visible)
+                {
+                    System.Diagnostics.Debug.WriteLine("Checking Rooms→Category container");
+                    
+                    var fromParam = RoomsFromParameterCombo?.SelectedItem?.ToString();
+                    var toParam = RoomsToParameterCombo?.SelectedItem?.ToString();
+                    var separator = RoomsSeparatorTextBox?.Text ?? "";
+                    
+                    System.Diagnostics.Debug.WriteLine($"  From: {fromParam ?? "NULL"}, To: {toParam ?? "NULL"}, Separator: '{separator}'");
+                    
+                    if (!string.IsNullOrEmpty(fromParam) && !string.IsNullOrEmpty(toParam))
+                    {
+                        var mapping = CreateMappingConfiguration(
+                            fromParam, toParam, separator, 
+                            MappingDirection.RoomsToCategory);
+                            
+                        if (mapping != null)
+                        {
+                            mappings.Add(mapping);
+                            System.Diagnostics.Debug.WriteLine($"  ✓ Added Rooms→Category mapping");
+                        }
+                    }
+                }
+
+                // Collect Category→Rooms mapping (if container is visible and has selections)  
+                if (CategoryMappingContainer?.Visibility == System.Windows.Visibility.Visible)
+                {
+                    System.Diagnostics.Debug.WriteLine("Checking Category→Rooms container");
+                    
+                    var fromParam = CategoryFromParameterCombo?.SelectedItem?.ToString();
+                    var toParam = CategoryToParameterCombo?.SelectedItem?.ToString(); 
+                    var separator = CategorySeparatorTextBox?.Text ?? "";
+                    
+                    System.Diagnostics.Debug.WriteLine($"  From: {fromParam ?? "NULL"}, To: {toParam ?? "NULL"}, Separator: '{separator}'");
+                    
+                    if (!string.IsNullOrEmpty(fromParam) && !string.IsNullOrEmpty(toParam))
+                    {
+                        var mapping = CreateMappingConfiguration(
+                            fromParam, toParam, separator,
+                            MappingDirection.CategoryToRooms);
+                            
+                        if (mapping != null)
+                        {
+                            mappings.Add(mapping);
+                            System.Diagnostics.Debug.WriteLine($"  ✓ Added Category→Rooms mapping");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error collecting from main ComboBoxes: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Collect mappings from dynamic rows (if any exist)
+        /// </summary>
+        private void CollectFromDynamicRows(List<ParameterMappingConfiguration> mappings)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("Checking for dynamic parameter mapping rows...");
+                // TODO: Implement dynamic row collection when that feature is fully implemented
+                // For now, the main ComboBoxes handle the primary parameter mapping functionality
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error collecting from dynamic rows: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Create a ParameterMappingConfiguration from parameter names
+        /// </summary>
+        private ParameterMappingConfiguration CreateMappingConfiguration(
+            string fromParamName, string toParamName, string separator, MappingDirection direction)
+        {
+            try
+            {
+                ParameterInfo fromParam = null;
+                ParameterInfo toParam = null;
+
+                if (direction == MappingDirection.RoomsToCategory)
+                {
+                    fromParam = _parameterMappingService?.RoomParameters?.FirstOrDefault(p => p.Name == fromParamName);
+                    toParam = _parameterMappingService?.ElementParameters?.FirstOrDefault(p => p.Name == toParamName);
+                }
+                else
+                {
+                    fromParam = _parameterMappingService?.ElementParameters?.FirstOrDefault(p => p.Name == fromParamName);
+                    toParam = _parameterMappingService?.RoomParameters?.FirstOrDefault(p => p.Name == toParamName);
+                }
+
+                if (fromParam == null || toParam == null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"  ✗ Could not resolve parameters: From={fromParam?.Name ?? "NULL"}, To={toParam?.Name ?? "NULL"}");
+                    return null;
+                }
+
+                // Get override checkbox value based on direction
+                bool overrideExistingValues = direction == MappingDirection.RoomsToCategory 
+                    ? (RoomsOverrideCheckBox?.IsChecked == true)
+                    : (CategoryOverrideCheckBox?.IsChecked == true);
+
+                return new ParameterMappingConfiguration
+                {
+                    FromParameter = fromParam,
+                    ToParameter = toParam,
+                    ValueSeparator = separator ?? "",
+                    IsEnabled = true,
+                    Direction = direction,
+                    OverrideExistingValues = overrideExistingValues
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error creating mapping configuration: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Collects parameter mappings from a specific UI container (e.g., RoomsMappingContainer)
+        /// </summary>
+        private List<ParameterMappingConfiguration> CollectMappingsFromContainer(Border container, MappingDirection direction)
+        {
+            var mappings = new List<ParameterMappingConfiguration>();
+
+            try
+            {
+                // Find the StackPanel that contains the parameter mapping rows
+                var stackPanel = FindChildOfType<StackPanel>(container);
+                if (stackPanel == null) return mappings;
+
+                // Get the separator value for this container
+                var separatorValue = GetSeparatorValueForContainer(container, direction);
+
+                // Look for parameter mapping grids within the container
+                foreach (var child in stackPanel.Children.OfType<System.Windows.Controls.Grid>())
+                {
+                    var mapping = ExtractMappingFromGrid(child, direction, separatorValue);
+                    if (mapping != null)
+                    {
+                        mappings.Add(mapping);
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Found {mappings.Count} mapping(s) in {direction} container");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error collecting mappings from container: {ex.Message}");
+            }
+
+            return mappings;
+        }
+
+        /// <summary>
+        /// Extracts parameter mapping configuration from a UI grid row
+        /// </summary>
+        private ParameterMappingConfiguration ExtractMappingFromGrid(System.Windows.Controls.Grid grid, MappingDirection direction, string separatorValue)
+        {
+            try
+            {
+                // Find From and To ComboBoxes in the grid
+                var fromCombo = FindChildOfType<ComboBox>(grid, "FromParameter");
+                var toCombo = FindChildOfType<ComboBox>(grid, "ToParameter");
+
+                if (fromCombo?.SelectedItem == null || toCombo?.SelectedItem == null)
+                    return null;
+
+                var fromParamName = fromCombo.SelectedItem.ToString();
+                var toParamName = toCombo.SelectedItem.ToString();
+
+                // Get parameter info objects
+                ParameterInfo fromParam = null;
+                ParameterInfo toParam = null;
+
+                if (direction == MappingDirection.RoomsToCategory)
+                {
+                    fromParam = _parameterMappingService?.RoomParameters?.FirstOrDefault(p => p.Name == fromParamName);
+                    toParam = _parameterMappingService?.ElementParameters?.FirstOrDefault(p => p.Name == toParamName);
+                }
+                else
+                {
+                    fromParam = _parameterMappingService?.ElementParameters?.FirstOrDefault(p => p.Name == fromParamName);
+                    toParam = _parameterMappingService?.RoomParameters?.FirstOrDefault(p => p.Name == toParamName);
+                }
+
+                if (fromParam == null || toParam == null)
+                    return null;
+
+                return new ParameterMappingConfiguration
+                {
+                    FromParameter = fromParam,
+                    ToParameter = toParam,
+                    ValueSeparator = separatorValue ?? "",
+                    IsEnabled = true,
+                    Direction = direction
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error extracting mapping from grid: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the separator value for a specific container
+        /// </summary>
+        private string GetSeparatorValueForContainer(Border container, MappingDirection direction)
+        {
+            try
+            {
+                if (direction == MappingDirection.RoomsToCategory)
+                {
+                    return RoomsSeparatorTextBox?.Text ?? "";
+                }
+                else
+                {
+                    return CategorySeparatorTextBox?.Text ?? "";
+                }
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// Helper method to find child controls of specific type
+        /// </summary>
+        private T FindChildOfType<T>(DependencyObject parent, string name = null) where T : DependencyObject
+        {
+            if (parent == null) return null;
+
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                
+                if (child is T result)
+                {
+                    if (name == null || (child is FrameworkElement fe && fe.Name == name))
+                        return result;
+                }
+
+                var foundChild = FindChildOfType<T>(child, name);
+                if (foundChild != null)
+                    return foundChild;
+            }
+
+            return null;
         }
         #endregion
 

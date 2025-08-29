@@ -13,29 +13,37 @@ namespace RoomsManagerAddin.Services.Categories.Walls
     /// </summary>
     public class WallBoundaryAnalysisService
     {
-        private readonly ParameterUpdateService _parameterService;
+        private readonly ParameterMappingExecutionService _parameterMappingExecutionService;
         
-        public WallBoundaryAnalysisService(ParameterUpdateService parameterService)
+        public WallBoundaryAnalysisService(ParameterMappingExecutionService parameterMappingExecutionService)
         {
-            _parameterService = parameterService;
+            _parameterMappingExecutionService = parameterMappingExecutionService;
         }
 
         /// <summary>
-        /// Analyze room-wall relationships using Room Boundary API
+        /// Analyze room-wall relationships using Room Boundary API with parameter mappings
         /// </summary>
         public List<RoomCollisionResult> AnalyzeRoomCollisions(
             Document document, 
             List<Room> rooms, 
             List<Wall> walls, 
+            List<ParameterMappingConfiguration> parameterMappings,
             Action<string> writeToLog,
             Action<string, string, int, int, int, int> showProgress)
         {
             var results = new List<RoomCollisionResult>();
-            var wallRoomRelationships = new Dictionary<ElementId, List<string>>(); // Track which rooms each wall bounds
+            var wallRoomRelationships = new Dictionary<ElementId, List<Room>>(); // Track which rooms each wall bounds
             var wallIdToWallMap = new Dictionary<ElementId, Wall>(); // Map wall ID to wall object
+            var roomElementRelationships = new Dictionary<Room, List<Element>>(); // Track which elements each room bounds (for batch processing)
 
             writeToLog("=== WALL BOUNDARY ANALYSIS (Room Boundary API) ===");
             writeToLog("Using Revit's native room boundary detection for maximum performance and accuracy");
+            
+            // Validate parameter mappings before starting analysis
+            if (!_parameterMappingExecutionService.ValidateAllMappings(parameterMappings))
+            {
+                writeToLog("⚠ No valid parameter mappings configured - analysis will complete but no parameters will be updated");
+            }
             
             // Configure boundary options - using Finish for most accurate room space analysis
             var boundaryOptions = new SpatialElementBoundaryOptions
@@ -98,12 +106,12 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                                     boundaryWallsCount++;
                                     wallTypes.Add(wallType);
 
-                                    // Track this relationship for wall parameter update
+                                    // Track this relationship for parameter mapping
                                     if (!wallRoomRelationships.ContainsKey(wall.Id))
                                     {
-                                        wallRoomRelationships[wall.Id] = new List<string>();
+                                        wallRoomRelationships[wall.Id] = new List<Room>();
                                     }
-                                    wallRoomRelationships[wall.Id].Add($"{room.Number} - {room.Name}");
+                                    wallRoomRelationships[wall.Id].Add(room);
                                     
                                     // Keep reference to wall object
                                     wallIdToWallMap[wall.Id] = wall;
@@ -113,13 +121,12 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                             result.WallsColliding = boundaryWallsCount;
                             result.WallTypes = wallTypes.ToList();
 
-                            // Update room Filter Tag parameter
-                            var filterTagValue = string.Join(", ", wallTypes);
-                            _parameterService.UpdateRoomFilterTag(room, filterTagValue);
+                            // Collect room-to-element relationships for batch processing later
+                            var relatedWalls = roomWalls.Where(w => walls.Any(analysisWall => analysisWall.Id.Equals(w.Id))).Cast<Element>().ToList();
+                            roomElementRelationships[room] = relatedWalls;
                             
                             writeToLog($"    ✓ Found {roomWalls.Count} boundary walls ({boundaryWallsCount} in analysis set)");
-                            writeToLog($"    ✓ Wall types: {filterTagValue}");
-                            writeToLog($"    ✓ Updated Room Filter Tag: {filterTagValue}");
+                            writeToLog($"    ✓ Wall types: {string.Join(", ", wallTypes)}");
                         }
                         else
                         {
@@ -170,65 +177,17 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                     }
                 }
 
-                // Update wall Filter Tag parameters with room boundary information
-                showProgress("Updating Wall Parameters", "Updating wall Filter Tag parameters...", 
-                            0, wallRoomRelationships.Count, 85, 100);
-                
-                writeToLog($"=== UPDATING WALL PARAMETERS ===");
-                writeToLog($"Updating Filter Tag for {wallRoomRelationships.Count} walls with boundary room information");
-                
-                // DEBUG: Analyze wall-room relationships for inconsistencies
-                foreach (var wallData in wallRoomRelationships)
-                {
-                    var wallId = wallData.Key;
-                    var boundaryRooms = wallData.Value;
-                    var wall = wallIdToWallMap[wallId];
-                    
-                    if (boundaryRooms.Count == 1)
-                    {
-                        writeToLog($"    ⚠ SINGLE BOUNDARY: Wall {wallId} ({wall.WallType?.Name}) bounds only 1 room: {boundaryRooms[0]}");
-                        
-                        // Check if wall has "Room Bounding" enabled
-                        var roomBoundingParam = wall.get_Parameter(BuiltInParameter.WALL_ATTR_ROOM_BOUNDING);
-                        var isRoomBounding = roomBoundingParam?.AsInteger() == 1;
-                        writeToLog($"      → Room Bounding enabled: {isRoomBounding}");
-                        
-                        // Check wall function
-                        var wallFunction = wall.WallType?.Function;
-                        writeToLog($"      → Wall Function: {wallFunction}");
-                    }
-                    else if (boundaryRooms.Count > 2)
-                    {
-                        writeToLog($"    ℹ MULTI BOUNDARY: Wall {wallId} bounds {boundaryRooms.Count} rooms: {string.Join(", ", boundaryRooms)}");
-                    }
-                }
-                
-                int wallUpdateIndex = 0;
-                foreach (var wallData in wallRoomRelationships)
-                {
-                    wallUpdateIndex++;
-                    if (wallUpdateIndex % 10 == 0 || wallUpdateIndex == wallRoomRelationships.Count)
-                    {
-                        showProgress("Updating Wall Parameters", 
-                                    $"Updating wall {wallUpdateIndex}/{wallRoomRelationships.Count}...", 
-                                    wallUpdateIndex, wallRoomRelationships.Count, 85, 100);
-                    }
-                    
-                    var wallId = wallData.Key;
-                    var boundaryRooms = wallData.Value;
-                    var wall = wallIdToWallMap[wallId];
-                    var wallFilterTagValue = string.Join("; ", boundaryRooms);
-                    
-                    try
-                    {
-                        _parameterService.UpdateWallFilterTag(wall, wallFilterTagValue);
-                        writeToLog($"    ✓ Wall {wallId}: {wallFilterTagValue}");
-                    }
-                    catch (Exception ex)
-                    {
-                        writeToLog($"    ✗ Failed to update wall {wallId}: {ex.Message}");
-                    }
-                }
+                // Set up progress callback for parameter mapping service
+                _parameterMappingExecutionService.SetProgressCallback(showProgress);
+
+                // Execute room-to-element parameter mappings in batch (first)
+                _parameterMappingExecutionService.ExecuteRoomToElementMappingsBatch(roomElementRelationships, parameterMappings);
+
+                // Execute element-to-room parameter mappings in batch (second)
+                _parameterMappingExecutionService.ExecuteElementToRoomMappings(
+                    wallRoomRelationships, 
+                    wallIdToWallMap.ToDictionary(kvp => kvp.Key, kvp => (Element)kvp.Value), 
+                    parameterMappings);
 
                 transaction.Commit();
                 writeToLog("✓ Transaction committed successfully");
