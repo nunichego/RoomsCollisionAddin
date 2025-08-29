@@ -260,6 +260,48 @@ RoomsManagerAddin/
   - Clean state management when switching categories
 - **Future Ready**: Architecture supports extending analysis beyond walls to any element type
 
+### Phase 9: Parameter Mapping UI Enhancement (August 29, 2025)
+- **Date**: August 29, 2025
+- **Goal**: Implement comprehensive parameter mapping interface with dynamic functionality
+- **Scope**: Add parameter mapping containers below filtering sections with full functionality
+- **Key Changes**:
+  - **Parameter Mapping UI**:
+    - Added two parameter mapping containers: "Rooms → Category" and "Category → Rooms"  
+    - Override existing values checkboxes for each mapping direction
+    - Dynamic From/To parameter ComboBoxes populated based on selected category
+    - Values separator fields with live preview text generation
+    - Add (+) and Remove (trash) buttons for multiple parameter mappings
+  - **New Architecture**:
+    - `ParameterMappingService`: Handles parameter discovery and mapping logic
+    - `ParameterMappingConfiguration`: Data model for mapping configurations
+    - `MappingDirection`: Enum for bidirectional mapping support
+  - **UI Layout Improvements**:
+    - Fixed layout issue where separator preview text pushed buttons off-screen
+    - Moved preview text below separator field instead of inline
+    - Proper vertical alignment of + and trash buttons
+    - Reduced font size and improved spacing for better fit
+  - **Dynamic Functionality**:
+    - **Functional + buttons**: Click to add new parameter mapping rows dynamically
+    - **Dynamic row creation**: `CreateParameterMappingRow()` method creates new mapping controls
+    - **Individual removal**: Each row has its own functional trash button
+    - **Live preview updates**: Separator preview text updates in real-time as you type
+    - **Proper parameter population**: New rows get correct parameters based on mapping direction
+- **Technical Implementation**:
+  - Resolved `Grid` namespace ambiguity by using `System.Windows.Controls.Grid`
+  - Event handlers properly wired for dynamic controls
+  - Memory management for dynamically created UI elements
+  - Parameter service integration for real-time ComboBox population
+- **Bug Fixes**:
+  - Fixed deployment path from `bin\Debug\` to correct `bin\Debug\net48\` directory
+  - Updated CLAUDE.md with proper deployment instructions and common issue solutions
+  - Corrected separator preview generation logic
+- **User Experience**: 
+  - Professional parameter mapping interface similar to filter system complexity
+  - Multiple mappings per direction supported
+  - Real-time feedback with preview text and status updates
+  - Clean removal of individual mapping rows
+- **File Size**: Increased to 179KB with full parameter mapping functionality
+
 ---
 
-*Last Updated: August 28, 2025 - Added Phase 8: Major UI Transformation - Dynamic Element Filtering*
+*Last Updated: August 29, 2025 - Added Phase 9: Parameter Mapping UI Enhancement*

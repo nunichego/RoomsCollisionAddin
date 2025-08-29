@@ -119,146 +119,340 @@
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Left: Filter rules panel -->
-            <GroupBox Grid.Column="0" Header="Rooms | Filter Elements" 
-                      Margin="0,0,8,0" Padding="16" 
-                      BorderBrush="#E0E0E0" BorderThickness="1" 
-                      Background="White">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Orientation="Vertical">
-                        <!-- Filter Summary -->
-                        <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
-                                CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Filter Status" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="FilterSummaryText" Text="No filters applied - showing all rooms" 
-                                              FontSize="12" Foreground="#666666"/>
-                                    <TextBlock x:Name="FilterCountText" Text="Rooms: 0 of 0" 
-                                              FontSize="11" Foreground="#888888" Margin="0,2,0,0"/>
-                                </StackPanel>
-                                
-                                <Button x:Name="FilterStatusAddRuleButton" Grid.Column="1" Content="Add Rule" 
-                                        Style="{StaticResource ModernButton}" VerticalAlignment="Center" 
-                                        MinWidth="80" Visibility="Visible"/>
-                            </Grid>
-                        </Border>
+            <!-- Left Column: Rooms filtering + parameter exchange -->
+            <Grid Grid.Column="0" Margin="0,0,8,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="1*"/>
+                </Grid.RowDefinitions>
 
-                        <!-- Main Filter Controls -->
-                        <Border x:Name="MainFilterContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
-                                CornerRadius="4" Padding="16" Margin="0,0,0,16" Visibility="Collapsed">
-                            <StackPanel>
-                                <!-- Header with main logical operator -->
-                                <Grid Margin="0,0,0,16">
+                <!-- Left Top: Filter rules panel -->
+                <GroupBox Grid.Row="0" Header="Rooms | Filter Elements" 
+                          Padding="16" 
+                          BorderBrush="#E0E0E0" BorderThickness="1" 
+                          Background="White">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Orientation="Vertical">
+                            <!-- Filter Summary -->
+                            <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
+                                    CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
+                                <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <ComboBox x:Name="MainOperatorCombo" Grid.Column="0" Width="200" SelectedIndex="0"
-                                              Style="{StaticResource RuleModeComboBox}">
-                                        <ComboBoxItem Content="AND (All must be true)"/>
-                                        <ComboBoxItem Content="OR (Any may be true)"/>
-                                    </ComboBox>
-                                    
-                                    <!-- Right-aligned buttons -->
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                        <Button x:Name="AddRuleButton" Content="Add Rule" MinWidth="70" Margin="0,0,6,0"
-                                                Style="{StaticResource ModernButton}"/>
-                                        <Button x:Name="AddSetButton" Content="Add Set" MinWidth="70" Margin="0,0,6,0"
-                                                Style="{StaticResource ModernButton}"/>
-                                        <Button x:Name="ClearFiltersButton" Content="Clear All" MinWidth="70"
-                                                Style="{StaticResource ModernButton}"/>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Filter Status" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="FilterSummaryText" Text="No filters applied - showing all rooms" 
+                                                  FontSize="12" Foreground="#666666"/>
+                                        <TextBlock x:Name="FilterCountText" Text="Rooms: 0 of 0" 
+                                                  FontSize="11" Foreground="#888888" Margin="0,2,0,0"/>
                                     </StackPanel>
+                                    
+                                    <Button x:Name="FilterStatusAddRuleButton" Grid.Column="1" Content="Add Rule" 
+                                            Style="{StaticResource ModernButton}" VerticalAlignment="Center" 
+                                            MinWidth="80" Visibility="Visible"/>
                                 </Grid>
+                            </Border>
 
-                                <!-- Dynamic Rules Container -->
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
-                                    <StackPanel x:Name="RulesContainer" Orientation="Vertical"/>
-                                </ScrollViewer>
-                            </StackPanel>
-                        </Border>
+                            <!-- Main Filter Controls -->
+                            <Border x:Name="MainFilterContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
+                                    CornerRadius="4" Padding="16" Margin="0,0,0,16" Visibility="Collapsed">
+                                <StackPanel>
+                                    <!-- Header with main logical operator -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <ComboBox x:Name="MainOperatorCombo" Grid.Column="0" Width="200" SelectedIndex="0"
+                                                  Style="{StaticResource RuleModeComboBox}">
+                                            <ComboBoxItem Content="AND (All must be true)"/>
+                                            <ComboBoxItem Content="OR (Any may be true)"/>
+                                        </ComboBox>
+                                        
+                                        <!-- Right-aligned buttons -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                            <Button x:Name="AddRuleButton" Content="Add Rule" MinWidth="70" Margin="0,0,6,0"
+                                                    Style="{StaticResource ModernButton}"/>
+                                            <Button x:Name="AddSetButton" Content="Add Set" MinWidth="70" Margin="0,0,6,0"
+                                                    Style="{StaticResource ModernButton}"/>
+                                            <Button x:Name="ClearFiltersButton" Content="Clear All" MinWidth="70"
+                                                    Style="{StaticResource ModernButton}"/>
+                                        </StackPanel>
+                                    </Grid>
 
-                    </StackPanel>
-                </ScrollViewer>
-            </GroupBox>
-
-            <!-- Right: Other Elements panel -->
-            <GroupBox x:Name="RightPanelGroupBox" Grid.Column="1" Header="Other Elements" 
-                      Margin="8,0,0,0" Padding="16" 
-                      BorderBrush="#E0E0E0" BorderThickness="1" 
-                      Background="White">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Orientation="Vertical">
-                        <!-- Category Selection -->
-                        <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
-                                CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Element Category" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,4"/>
-                                    <ComboBox x:Name="ElementCategoryCombo" 
-                                              Style="{StaticResource ModernComboBox}"
-                                              Width="200" HorizontalAlignment="Left"/>
-                                    <TextBlock x:Name="ElementCountText" Text="Elements: 0" 
-                                              FontSize="11" Foreground="#888888" Margin="0,4,0,0"/>
+                                    <!-- Dynamic Rules Container -->
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
+                                        <StackPanel x:Name="RulesContainer" Orientation="Vertical"/>
+                                    </ScrollViewer>
                                 </StackPanel>
-                                
-                                <Button x:Name="ElementFilterStatusAddRuleButton" Grid.Column="1" Content="Add Rule" 
-                                        Style="{StaticResource ModernButton}" VerticalAlignment="Center" 
-                                        MinWidth="80" Visibility="Visible"/>
-                            </Grid>
-                        </Border>
+                            </Border>
 
-                        <!-- Main Element Filter Controls -->
-                        <Border x:Name="ElementMainFilterContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
-                                CornerRadius="4" Padding="16" Margin="0,0,0,16" Visibility="Collapsed">
-                            <StackPanel>
-                                <!-- Header with main logical operator -->
-                                <Grid Margin="0,0,0,16">
+                        </StackPanel>
+                    </ScrollViewer>
+                </GroupBox>
+
+                <!-- Left Bottom: Parameter Mapping (Rooms -> Category) -->
+                <GroupBox Grid.Row="1" Header="Parameter Mapping: Rooms → Category" 
+                          Margin="0,8,0,0" Padding="16" 
+                          BorderBrush="#E0E0E0" BorderThickness="1" 
+                          Background="White">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Orientation="Vertical">
+                            <!-- Mapping Status -->
+                            <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
+                                    CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
+                                <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <ComboBox x:Name="ElementMainOperatorCombo" Grid.Column="0" Width="200" SelectedIndex="0"
-                                              Style="{StaticResource RuleModeComboBox}">
-                                        <ComboBoxItem Content="AND (All must be true)"/>
-                                        <ComboBoxItem Content="OR (Any may be true)"/>
-                                    </ComboBox>
-                                    
-                                    <!-- Right-aligned buttons -->
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                        <Button x:Name="ElementAddRuleButton" Content="Add Rule" MinWidth="70" Margin="0,0,6,0"
-                                                Style="{StaticResource ModernButton}"/>
-                                        <Button x:Name="ElementAddSetButton" Content="Add Set" MinWidth="70" Margin="0,0,6,0"
-                                                Style="{StaticResource ModernButton}"/>
-                                        <Button x:Name="ElementClearFiltersButton" Content="Clear All" MinWidth="70"
-                                                Style="{StaticResource ModernButton}"/>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Mapping Status" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="RoomsMappingSummaryText" Text="No Rooms → Category Parameter Mapping" 
+                                                  FontSize="12" Foreground="#666666"/>
                                     </StackPanel>
+                                    
+                                    <Button x:Name="RoomsMappingEnableButton" Grid.Column="1" Content="Select Category" 
+                                            Style="{StaticResource ModernButton}" VerticalAlignment="Center" 
+                                            MinWidth="160" IsEnabled="False"/>
                                 </Grid>
+                            </Border>
 
-                                <!-- Dynamic Rules Container -->
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
-                                    <StackPanel x:Name="ElementRulesContainer" Orientation="Vertical"/>
-                                </ScrollViewer>
-                            </StackPanel>
-                        </Border>
+                            <!-- Main Mapping Controls -->
+                            <Border x:Name="RoomsMappingContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
+                                    CornerRadius="4" Padding="12,8,12,12" Margin="0,0,0,16" Visibility="Collapsed">
+                                <StackPanel>
+                                    <!-- Override Checkbox Row -->
+                                    <CheckBox x:Name="RoomsOverrideCheckBox" Content="Override existing values" 
+                                              FontSize="11" Foreground="#666666" Margin="0,0,0,8" 
+                                              IsChecked="False"/>
+                                    
+                                    <!-- Header with controls -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Parameter Selection Row -->
+                                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,8">
+                                            <TextBlock Text="From Parameter" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
+                                            <ComboBox x:Name="RoomsFromParameterCombo" Style="{StaticResource ModernComboBox}" 
+                                                      MinWidth="130" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,12,8">
+                                            <TextBlock Text="To Parameter" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
+                                            <ComboBox x:Name="RoomsToParameterCombo" Style="{StaticResource ModernComboBox}" 
+                                                      MinWidth="130" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Right side controls -->
+                                        <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Vertical" Margin="0,0,8,8">
+                                            <TextBlock Text="Values Separator" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="RoomsSeparatorTextBox" Style="{StaticResource ModernTextBox}" 
+                                                     Width="80" HorizontalAlignment="Left"/>
+                                            <TextBlock x:Name="RoomsSeparatorPreview" Text="value01 value02" FontStyle="Italic" FontSize="9" 
+                                                       Foreground="#888888" Margin="0,2,0,0" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                        
+                                        <Button x:Name="RoomsMappingAddButton" Grid.Row="0" Grid.Column="4" Content="+" 
+                                                Style="{StaticResource ModernButton}" VerticalAlignment="Bottom" 
+                                                Width="24" Height="24" FontSize="14" FontWeight="Bold" Margin="0,0,8,2"/>
+                                        
+                                        <Button x:Name="RoomsMappingRemoveButton" Grid.Row="0" Grid.Column="5" Content="🗑️" 
+                                                Style="{StaticResource DeleteButton}" VerticalAlignment="Bottom" 
+                                                Width="24" Height="24" FontSize="12" Margin="0,0,0,2"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
 
-                    </StackPanel>
-                </ScrollViewer>
-            </GroupBox>
+                        </StackPanel>
+                    </ScrollViewer>
+                </GroupBox>
+            </Grid>
+
+            <!-- Right Column: Elements filtering + parameter exchange -->
+            <Grid Grid.Column="1" Margin="8,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="1*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Right Top: Other Elements panel -->
+                <GroupBox x:Name="RightPanelGroupBox" Grid.Row="0" Header="Other Elements" 
+                          Padding="16" 
+                          BorderBrush="#E0E0E0" BorderThickness="1" 
+                          Background="White">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Orientation="Vertical">
+                            <!-- Category Selection -->
+                            <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
+                                    CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Element Category" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,4"/>
+                                        <ComboBox x:Name="ElementCategoryCombo" 
+                                                  Style="{StaticResource ModernComboBox}"
+                                                  Width="200" HorizontalAlignment="Left"/>
+                                        <TextBlock x:Name="ElementCountText" Text="Elements: 0" 
+                                                  FontSize="11" Foreground="#888888" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                    
+                                    <Button x:Name="ElementFilterStatusAddRuleButton" Grid.Column="1" Content="Add Rule" 
+                                            Style="{StaticResource ModernButton}" VerticalAlignment="Center" 
+                                            MinWidth="80" Visibility="Visible"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Main Element Filter Controls -->
+                            <Border x:Name="ElementMainFilterContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
+                                    CornerRadius="4" Padding="16" Margin="0,0,0,16" Visibility="Collapsed">
+                                <StackPanel>
+                                    <!-- Header with main logical operator -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <ComboBox x:Name="ElementMainOperatorCombo" Grid.Column="0" Width="200" SelectedIndex="0"
+                                                  Style="{StaticResource RuleModeComboBox}">
+                                            <ComboBoxItem Content="AND (All must be true)"/>
+                                            <ComboBoxItem Content="OR (Any may be true)"/>
+                                        </ComboBox>
+                                        
+                                        <!-- Right-aligned buttons -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                            <Button x:Name="ElementAddRuleButton" Content="Add Rule" MinWidth="70" Margin="0,0,6,0"
+                                                    Style="{StaticResource ModernButton}"/>
+                                            <Button x:Name="ElementAddSetButton" Content="Add Set" MinWidth="70" Margin="0,0,6,0"
+                                                    Style="{StaticResource ModernButton}"/>
+                                            <Button x:Name="ElementClearFiltersButton" Content="Clear All" MinWidth="70"
+                                                    Style="{StaticResource ModernButton}"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Dynamic Rules Container -->
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
+                                        <StackPanel x:Name="ElementRulesContainer" Orientation="Vertical"/>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </GroupBox>
+
+                <!-- Right Bottom: Parameter Mapping (Category -> Rooms) -->
+                <GroupBox Grid.Row="1" Header="Parameter Mapping: Category → Rooms" 
+                          Margin="0,8,0,0" Padding="16" 
+                          BorderBrush="#E0E0E0" BorderThickness="1" 
+                          Background="White">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Orientation="Vertical">
+                            <!-- Mapping Status -->
+                            <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1" 
+                                    CornerRadius="4" Padding="12,8" Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Mapping Status" FontWeight="SemiBold" FontSize="13" Foreground="#333333" Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="CategoryMappingSummaryText" Text="No Category → Rooms Parameter Mapping" 
+                                                  FontSize="12" Foreground="#666666"/>
+                                    </StackPanel>
+                                    
+                                    <Button x:Name="CategoryMappingEnableButton" Grid.Column="1" Content="Select Category" 
+                                            Style="{StaticResource ModernButton}" VerticalAlignment="Center" 
+                                            MinWidth="160" IsEnabled="False"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Main Mapping Controls -->
+                            <Border x:Name="CategoryMappingContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
+                                    CornerRadius="4" Padding="12,8,12,12" Margin="0,0,0,16" Visibility="Collapsed">
+                                <StackPanel>
+                                    <!-- Override Checkbox Row -->
+                                    <CheckBox x:Name="CategoryOverrideCheckBox" Content="Override existing values" 
+                                              FontSize="11" Foreground="#666666" Margin="0,0,0,8" 
+                                              IsChecked="False"/>
+                                    
+                                    <!-- Header with controls -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Parameter Selection Row -->
+                                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,8">
+                                            <TextBlock Text="From Parameter" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
+                                            <ComboBox x:Name="CategoryFromParameterCombo" Style="{StaticResource ModernComboBox}" 
+                                                      MinWidth="130" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,12,8">
+                                            <TextBlock Text="To Parameter" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
+                                            <ComboBox x:Name="CategoryToParameterCombo" Style="{StaticResource ModernComboBox}" 
+                                                      MinWidth="130" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Right side controls -->
+                                        <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Vertical" Margin="0,0,8,8">
+                                            <TextBlock Text="Values Separator" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CategorySeparatorTextBox" Style="{StaticResource ModernTextBox}" 
+                                                     Width="80" HorizontalAlignment="Left"/>
+                                            <TextBlock x:Name="CategorySeparatorPreview" Text="value01 value02" FontStyle="Italic" FontSize="9" 
+                                                       Foreground="#888888" Margin="0,2,0,0" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                        
+                                        <Button x:Name="CategoryMappingAddButton" Grid.Row="0" Grid.Column="4" Content="+" 
+                                                Style="{StaticResource ModernButton}" VerticalAlignment="Bottom" 
+                                                Width="24" Height="24" FontSize="14" FontWeight="Bold" Margin="0,0,8,2"/>
+                                        
+                                        <Button x:Name="CategoryMappingRemoveButton" Grid.Row="0" Grid.Column="5" Content="🗑️" 
+                                                Style="{StaticResource DeleteButton}" VerticalAlignment="Bottom" 
+                                                Width="24" Height="24" FontSize="12" Margin="0,0,0,2"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </GroupBox>
+            </Grid>
         </Grid>
 
         <!-- Bottom panel -->

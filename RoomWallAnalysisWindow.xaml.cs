@@ -22,6 +22,7 @@ namespace RoomsManagerAddin
         private Document _document;
         private RoomWallAnalysisController _controller;
         private GenericElementController _elementController;
+        private ParameterMappingService _parameterMappingService;
         private List<RoomItem> _roomItems;
         private ElementCollectorService _elementCollector;
         private List<ParameterInfo> _availableParameters;
@@ -36,6 +37,10 @@ namespace RoomsManagerAddin
         private List<ParameterInfo> _availableElementParameters;
         private ElementFilterConfiguration _currentElementFilter;
         private List<Element> _filteredElements;
+        
+        // Parameter mapping configurations
+        private ParameterMappingConfiguration _roomsToCategoryMapping;
+        private ParameterMappingConfiguration _categoryToRoomsMapping;
         #endregion
 
         #region Constructor
@@ -45,8 +50,21 @@ namespace RoomsManagerAddin
             _elementCollector = new ElementCollectorService();
             _controller = new RoomWallAnalysisController(document);
             _elementController = new GenericElementController(document);
+            _parameterMappingService = new ParameterMappingService(document);
             _availableParameters = _controller.GetAvailableRoomParameters();
             _currentFilter = _controller.CreateFilterConfiguration("Room Filter");
+
+            // Initialize mapping configurations
+            _roomsToCategoryMapping = new ParameterMappingConfiguration 
+            { 
+                Direction = MappingDirection.RoomsToCategory, 
+                IsEnabled = false 
+            };
+            _categoryToRoomsMapping = new ParameterMappingConfiguration 
+            { 
+                Direction = MappingDirection.CategoryToRooms, 
+                IsEnabled = false 
+            };
 
             InitializeComponent();
             
@@ -78,6 +96,7 @@ namespace RoomsManagerAddin
                 PopulateFilterDropdowns();
                 PopulateElementCategoryDropdown();
                 UpdateElementCounters();
+                UpdateParameterMappingLabels(); // Set initial parameter mapping labels
                 
                 StatusLabel.Content = "Ready";
             }
@@ -110,6 +129,24 @@ namespace RoomsManagerAddin
             ElementAddSetButton.Click += (s, e) => AddNewElementSet();
             ElementClearFiltersButton.Click += (s, e) => ClearAllElementFilters();
             ElementFilterStatusAddRuleButton.Click += (s, e) => AddNewElementRule();
+
+            // Parameter mapping buttons
+            RoomsMappingEnableButton.Click += (s, e) => EnableRoomsParameterMapping();
+            CategoryMappingEnableButton.Click += (s, e) => EnableCategoryParameterMapping();
+            RoomsMappingAddButton.Click += (s, e) => AddRoomsParameterMapping();
+            CategoryMappingAddButton.Click += (s, e) => AddCategoryParameterMapping();
+            RoomsMappingRemoveButton.Click += (s, e) => DisableRoomsParameterMapping();
+            CategoryMappingRemoveButton.Click += (s, e) => DisableCategoryParameterMapping();
+
+            // Parameter mapping ComboBoxes
+            RoomsFromParameterCombo.SelectionChanged += (s, e) => OnRoomsMappingParameterChanged();
+            RoomsToParameterCombo.SelectionChanged += (s, e) => OnRoomsMappingParameterChanged();
+            CategoryFromParameterCombo.SelectionChanged += (s, e) => OnCategoryMappingParameterChanged();
+            CategoryToParameterCombo.SelectionChanged += (s, e) => OnCategoryMappingParameterChanged();
+
+            // Separator TextBoxes
+            RoomsSeparatorTextBox.TextChanged += (s, e) => OnRoomsSeparatorChanged();
+            CategorySeparatorTextBox.TextChanged += (s, e) => OnCategorySeparatorChanged();
 
             // Analysis buttons
             RunAnalysisButton.Click += RunAnalysisButton_Click;
@@ -186,6 +223,9 @@ namespace RoomsManagerAddin
                     // Select category in controller
                     _elementController.SelectCategory(selectedCategory);
                     
+                    // Update parameter mapping service with selected category
+                    _parameterMappingService.SetSelectedCategory(selectedCategory);
+                    
                     // Update available parameters for this category with null checks
                     _availableElementParameters = _elementController.AvailableParameters ?? new List<ParameterInfo>();
                     
@@ -211,6 +251,8 @@ namespace RoomsManagerAddin
                     // Update UI
                     UpdateElementFilterUI();
                     UpdateElementCounters();
+                    UpdateParameterMappingLabels(); // Update the parameter mapping labels
+                    PopulateParameterMappingComboBoxes(); // Populate the mapping ComboBoxes
                     
                     StatusLabel.Content = $"Selected {selectedCategory.Name}: {_filteredElements.Count} elements";
                 }
@@ -232,12 +274,15 @@ namespace RoomsManagerAddin
             try
             {
                 _elementController?.ClearCategory();
+                _parameterMappingService?.ClearSelectedCategory();
                 _availableElementParameters?.Clear();
                 _filteredElements?.Clear();
                 _currentElementFilter = null;
                 
                 UpdateElementFilterUI();
                 UpdateElementCounters();
+                UpdateParameterMappingLabels(); // Update the parameter mapping labels
+                ClearParameterMappingComboBoxes(); // Clear the mapping ComboBoxes
                 
                 StatusLabel.Content = "No element category selected";
             }
@@ -267,6 +312,121 @@ namespace RoomsManagerAddin
             catch (Exception ex)
             {
                 StatusLabel.Content = $"Error updating element counters: {ex.Message}";
+            }
+        }
+
+        private void UpdateParameterMappingLabels()
+        {
+            try
+            {
+                var categoryName = _parameterMappingService?.GetCategoryDisplayName() ?? "Category";
+                
+                // Update the mapping summary labels with dynamic category name
+                if (_roomsToCategoryMapping?.IsEnabled == true)
+                {
+                    RoomsMappingSummaryText.Text = $"Rooms → {categoryName} Parameter Mapping Enabled";
+                }
+                else
+                {
+                    RoomsMappingSummaryText.Text = $"No Rooms → {categoryName} Parameter Mapping";
+                }
+                
+                if (_categoryToRoomsMapping?.IsEnabled == true)
+                {
+                    CategoryMappingSummaryText.Text = $"{categoryName} → Rooms Parameter Mapping Enabled";
+                }
+                else
+                {
+                    CategoryMappingSummaryText.Text = $"No {categoryName} → Rooms Parameter Mapping";
+                }
+                
+                // Update the enable button state and text based on category selection
+                var hasCategorySelected = _parameterMappingService?.HasCategorySelected ?? false;
+                
+                RoomsMappingEnableButton.IsEnabled = hasCategorySelected;
+                RoomsMappingEnableButton.Content = hasCategorySelected ? "Enable Parameter Mapping" : "Select Category";
+                
+                CategoryMappingEnableButton.IsEnabled = hasCategorySelected;
+                CategoryMappingEnableButton.Content = hasCategorySelected ? "Enable Parameter Mapping" : "Select Category";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error updating parameter mapping labels: {ex.Message}";
+            }
+        }
+
+        private void PopulateParameterMappingComboBoxes()
+        {
+            try
+            {
+                // Clear existing items
+                RoomsFromParameterCombo.Items.Clear();
+                RoomsToParameterCombo.Items.Clear();
+                CategoryFromParameterCombo.Items.Clear();
+                CategoryToParameterCombo.Items.Clear();
+
+                if (_parameterMappingService?.HasCategorySelected != true) return;
+
+                // For Rooms → Category mapping
+                // From: Room parameters, To: Category parameters
+                RoomsFromParameterCombo.Items.Add("Select Parameter");
+                foreach (var param in _parameterMappingService.RoomParameters)
+                {
+                    RoomsFromParameterCombo.Items.Add(param.Name);
+                }
+                RoomsFromParameterCombo.SelectedIndex = 0;
+
+                RoomsToParameterCombo.Items.Add("Select Parameter");
+                foreach (var param in _parameterMappingService.ElementParameters)
+                {
+                    RoomsToParameterCombo.Items.Add(param.Name);
+                }
+                RoomsToParameterCombo.SelectedIndex = 0;
+
+                // For Category → Rooms mapping
+                // From: Category parameters, To: Room parameters
+                CategoryFromParameterCombo.Items.Add("Select Parameter");
+                foreach (var param in _parameterMappingService.ElementParameters)
+                {
+                    CategoryFromParameterCombo.Items.Add(param.Name);
+                }
+                CategoryFromParameterCombo.SelectedIndex = 0;
+
+                CategoryToParameterCombo.Items.Add("Select Parameter");
+                foreach (var param in _parameterMappingService.RoomParameters)
+                {
+                    CategoryToParameterCombo.Items.Add(param.Name);
+                }
+                CategoryToParameterCombo.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error populating parameter ComboBoxes: {ex.Message}";
+            }
+        }
+
+        private void ClearParameterMappingComboBoxes()
+        {
+            try
+            {
+                RoomsFromParameterCombo.Items.Clear();
+                RoomsToParameterCombo.Items.Clear();
+                CategoryFromParameterCombo.Items.Clear();
+                CategoryToParameterCombo.Items.Clear();
+
+                RoomsFromParameterCombo.Items.Add("No Category Selected");
+                RoomsToParameterCombo.Items.Add("No Category Selected");
+                CategoryFromParameterCombo.Items.Add("No Category Selected");
+                CategoryToParameterCombo.Items.Add("No Category Selected");
+
+                RoomsFromParameterCombo.SelectedIndex = 0;
+                RoomsToParameterCombo.SelectedIndex = 0;
+                CategoryFromParameterCombo.SelectedIndex = 0;
+                CategoryToParameterCombo.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error clearing parameter ComboBoxes: {ex.Message}";
             }
         }
 
@@ -1361,6 +1521,413 @@ namespace RoomsManagerAddin
         
         #endregion
 
+        #region Parameter Mapping Methods
+        
+        private void EnableRoomsParameterMapping()
+        {
+            try
+            {
+                // Update mapping configuration
+                _roomsToCategoryMapping.IsEnabled = true;
+                
+                // Show the mapping controls
+                RoomsMappingContainer.Visibility = System.Windows.Visibility.Visible;
+                
+                // Hide the enable button
+                RoomsMappingEnableButton.Visibility = System.Windows.Visibility.Collapsed;
+                
+                // Update summary text
+                UpdateParameterMappingLabels();
+                
+                StatusLabel.Content = "Rooms parameter mapping enabled";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error enabling rooms mapping: {ex.Message}";
+            }
+        }
+        
+        private void EnableCategoryParameterMapping()
+        {
+            try
+            {
+                // Update mapping configuration
+                _categoryToRoomsMapping.IsEnabled = true;
+                
+                // Show the mapping controls
+                CategoryMappingContainer.Visibility = System.Windows.Visibility.Visible;
+                
+                // Hide the enable button
+                CategoryMappingEnableButton.Visibility = System.Windows.Visibility.Collapsed;
+                
+                // Update summary text
+                UpdateParameterMappingLabels();
+                
+                StatusLabel.Content = "Category parameter mapping enabled";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error enabling category mapping: {ex.Message}";
+            }
+        }
+        
+        private void DisableRoomsParameterMapping()
+        {
+            try
+            {
+                // Update mapping configuration
+                _roomsToCategoryMapping.IsEnabled = false;
+                _roomsToCategoryMapping.FromParameter = null;
+                _roomsToCategoryMapping.ToParameter = null;
+                _roomsToCategoryMapping.ValueSeparator = "";
+                
+                // Hide the mapping controls
+                RoomsMappingContainer.Visibility = System.Windows.Visibility.Collapsed;
+                
+                // Show the enable button
+                RoomsMappingEnableButton.Visibility = System.Windows.Visibility.Visible;
+                
+                // Clear separator text and ComboBoxes
+                RoomsSeparatorTextBox.Text = "";
+                if (RoomsFromParameterCombo.Items.Count > 0) RoomsFromParameterCombo.SelectedIndex = 0;
+                if (RoomsToParameterCombo.Items.Count > 0) RoomsToParameterCombo.SelectedIndex = 0;
+                UpdateRoomsSeparatorPreview();
+                
+                // Update summary text
+                UpdateParameterMappingLabels();
+                
+                StatusLabel.Content = "Rooms parameter mapping disabled";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error disabling rooms mapping: {ex.Message}";
+            }
+        }
+        
+        private void DisableCategoryParameterMapping()
+        {
+            try
+            {
+                // Update mapping configuration
+                _categoryToRoomsMapping.IsEnabled = false;
+                _categoryToRoomsMapping.FromParameter = null;
+                _categoryToRoomsMapping.ToParameter = null;
+                _categoryToRoomsMapping.ValueSeparator = "";
+                
+                // Hide the mapping controls
+                CategoryMappingContainer.Visibility = System.Windows.Visibility.Collapsed;
+                
+                // Show the enable button
+                CategoryMappingEnableButton.Visibility = System.Windows.Visibility.Visible;
+                
+                // Clear separator text and ComboBoxes
+                CategorySeparatorTextBox.Text = "";
+                if (CategoryFromParameterCombo.Items.Count > 0) CategoryFromParameterCombo.SelectedIndex = 0;
+                if (CategoryToParameterCombo.Items.Count > 0) CategoryToParameterCombo.SelectedIndex = 0;
+                UpdateCategorySeparatorPreview();
+                
+                // Update summary text
+                UpdateParameterMappingLabels();
+                
+                StatusLabel.Content = "Category parameter mapping disabled";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error disabling category mapping: {ex.Message}";
+            }
+        }
+
+        // Event handlers for parameter mapping
+        private void OnRoomsMappingParameterChanged()
+        {
+            try
+            {
+                UpdateRoomsMappingConfiguration();
+                StatusLabel.Content = "Rooms mapping parameters updated";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error updating rooms mapping: {ex.Message}";
+            }
+        }
+
+        private void OnCategoryMappingParameterChanged()
+        {
+            try
+            {
+                UpdateCategoryMappingConfiguration();
+                StatusLabel.Content = "Category mapping parameters updated";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error updating category mapping: {ex.Message}";
+            }
+        }
+
+        private void OnRoomsSeparatorChanged()
+        {
+            try
+            {
+                _roomsToCategoryMapping.ValueSeparator = RoomsSeparatorTextBox.Text;
+                UpdateRoomsSeparatorPreview();
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error updating rooms separator: {ex.Message}";
+            }
+        }
+
+        private void OnCategorySeparatorChanged()
+        {
+            try
+            {
+                _categoryToRoomsMapping.ValueSeparator = CategorySeparatorTextBox.Text;
+                UpdateCategorySeparatorPreview();
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error updating category separator: {ex.Message}";
+            }
+        }
+
+        private void UpdateRoomsMappingConfiguration()
+        {
+            if (_parameterMappingService == null) return;
+
+            var fromParamName = RoomsFromParameterCombo.SelectedItem?.ToString();
+            var toParamName = RoomsToParameterCombo.SelectedItem?.ToString();
+
+            _roomsToCategoryMapping.FromParameter = _parameterMappingService.RoomParameters
+                .FirstOrDefault(p => p.Name == fromParamName);
+            _roomsToCategoryMapping.ToParameter = _parameterMappingService.ElementParameters
+                .FirstOrDefault(p => p.Name == toParamName);
+        }
+
+        private void UpdateCategoryMappingConfiguration()
+        {
+            if (_parameterMappingService == null) return;
+
+            var fromParamName = CategoryFromParameterCombo.SelectedItem?.ToString();
+            var toParamName = CategoryToParameterCombo.SelectedItem?.ToString();
+
+            _categoryToRoomsMapping.FromParameter = _parameterMappingService.ElementParameters
+                .FirstOrDefault(p => p.Name == fromParamName);
+            _categoryToRoomsMapping.ToParameter = _parameterMappingService.RoomParameters
+                .FirstOrDefault(p => p.Name == toParamName);
+        }
+
+        private void UpdateRoomsSeparatorPreview()
+        {
+            RoomsSeparatorPreview.Text = _parameterMappingService?.GenerateSeparatorPreview(RoomsSeparatorTextBox.Text) ?? "*value* *value*";
+        }
+
+        private void UpdateCategorySeparatorPreview()
+        {
+            CategorySeparatorPreview.Text = _parameterMappingService?.GenerateSeparatorPreview(CategorySeparatorTextBox.Text) ?? "*value* *value*";
+        }
+
+        private void AddRoomsParameterMapping()
+        {
+            try
+            {
+                // Find the main content within RoomsMappingContainer
+                var border = RoomsMappingContainer.Child as Border;
+                if (border?.Child is StackPanel mainPanel)
+                {
+                    // Create a new mapping row
+                    var newMappingGrid = CreateParameterMappingRow("Rooms", true);
+                    
+                    // Add the new row to the main panel (before any existing additional rows)
+                    mainPanel.Children.Insert(mainPanel.Children.Count, newMappingGrid);
+                    
+                    StatusLabel.Content = "Added new rooms parameter mapping row";
+                }
+                else
+                {
+                    StatusLabel.Content = "Could not find mapping container to add new row";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error adding rooms mapping: {ex.Message}";
+            }
+        }
+
+        private void AddCategoryParameterMapping()
+        {
+            try
+            {
+                // Find the main content within CategoryMappingContainer
+                var border = CategoryMappingContainer.Child as Border;
+                if (border?.Child is StackPanel mainPanel)
+                {
+                    // Create a new mapping row
+                    var newMappingGrid = CreateParameterMappingRow("Category", false);
+                    
+                    // Add the new row to the main panel (before any existing additional rows)
+                    mainPanel.Children.Insert(mainPanel.Children.Count, newMappingGrid);
+                    
+                    StatusLabel.Content = "Added new category parameter mapping row";
+                }
+                else
+                {
+                    StatusLabel.Content = "Could not find mapping container to add new row";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Content = $"Error adding category mapping: {ex.Message}";
+            }
+        }
+
+        private System.Windows.Controls.Grid CreateParameterMappingRow(string mappingType, bool isRoomsToCategory)
+        {
+            var grid = new System.Windows.Controls.Grid { Margin = new Thickness(0, 8, 0, 0) };
+            
+            // Define grid columns to match the existing layout
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // From Parameter
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // To Parameter
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Spacer
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Separator
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Add button (hidden)
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Remove button
+            
+            // From Parameter
+            var fromPanel = new StackPanel { Margin = new Thickness(0, 0, 12, 8) };
+            var fromLabel = new TextBlock 
+            { 
+                Text = "From Parameter", 
+                FontSize = 11, 
+                Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(102, 102, 102)), 
+                Margin = new Thickness(0, 0, 0, 2) 
+            };
+            var fromCombo = new ComboBox 
+            { 
+                Style = (Style)FindResource("ModernComboBox"), 
+                MinWidth = 130, 
+                HorizontalAlignment = HorizontalAlignment.Left 
+            };
+            
+            fromPanel.Children.Add(fromLabel);
+            fromPanel.Children.Add(fromCombo);
+            System.Windows.Controls.Grid.SetColumn(fromPanel, 0);
+            grid.Children.Add(fromPanel);
+            
+            // To Parameter
+            var toPanel = new StackPanel { Margin = new Thickness(0, 0, 12, 8) };
+            var toLabel = new TextBlock 
+            { 
+                Text = "To Parameter", 
+                FontSize = 11, 
+                Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(102, 102, 102)), 
+                Margin = new Thickness(0, 0, 0, 2) 
+            };
+            var toCombo = new ComboBox 
+            { 
+                Style = (Style)FindResource("ModernComboBox"), 
+                MinWidth = 130, 
+                HorizontalAlignment = HorizontalAlignment.Left 
+            };
+            
+            toPanel.Children.Add(toLabel);
+            toPanel.Children.Add(toCombo);
+            System.Windows.Controls.Grid.SetColumn(toPanel, 1);
+            grid.Children.Add(toPanel);
+            
+            // Values Separator
+            var separatorPanel = new StackPanel { Orientation = Orientation.Vertical, Margin = new Thickness(0, 0, 8, 8) };
+            var separatorLabel = new TextBlock 
+            { 
+                Text = "Values Separator", 
+                FontSize = 11, 
+                Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(102, 102, 102)), 
+                Margin = new Thickness(0, 0, 0, 2) 
+            };
+            var separatorTextBox = new TextBox 
+            { 
+                Style = (Style)FindResource("ModernTextBox"), 
+                Width = 80, 
+                HorizontalAlignment = HorizontalAlignment.Left 
+            };
+            var separatorPreview = new TextBlock 
+            { 
+                Text = "value01 value02", 
+                FontStyle = FontStyles.Italic, 
+                FontSize = 9, 
+                Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(136, 136, 136)), 
+                Margin = new Thickness(0, 2, 0, 0), 
+                HorizontalAlignment = HorizontalAlignment.Left 
+            };
+            
+            separatorPanel.Children.Add(separatorLabel);
+            separatorPanel.Children.Add(separatorTextBox);
+            separatorPanel.Children.Add(separatorPreview);
+            System.Windows.Controls.Grid.SetColumn(separatorPanel, 3);
+            grid.Children.Add(separatorPanel);
+            
+            // Remove button
+            var removeButton = new Button 
+            { 
+                Content = "🗑️", 
+                Style = (Style)FindResource("DeleteButton"), 
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Width = 24, 
+                Height = 24, 
+                FontSize = 12, 
+                Margin = new Thickness(0, 0, 0, 2) 
+            };
+            
+            // Wire up remove button to remove this grid from its parent
+            removeButton.Click += (s, e) =>
+            {
+                if (grid.Parent is StackPanel parentPanel)
+                {
+                    parentPanel.Children.Remove(grid);
+                    StatusLabel.Content = $"Removed {mappingType.ToLower()} parameter mapping row";
+                }
+            };
+            
+            System.Windows.Controls.Grid.SetColumn(removeButton, 5);
+            grid.Children.Add(removeButton);
+            
+            // Populate ComboBoxes based on mapping direction
+            if (isRoomsToCategory)
+            {
+                // Rooms → Category mapping: From = Room parameters, To = Category parameters
+                PopulateComboBox(fromCombo, _parameterMappingService?.RoomParameters);
+                PopulateComboBox(toCombo, _parameterMappingService?.ElementParameters);
+            }
+            else
+            {
+                // Category → Rooms mapping: From = Category parameters, To = Room parameters
+                PopulateComboBox(fromCombo, _parameterMappingService?.ElementParameters);
+                PopulateComboBox(toCombo, _parameterMappingService?.RoomParameters);
+            }
+            
+            // Wire up separator preview updates
+            separatorTextBox.TextChanged += (s, e) =>
+            {
+                separatorPreview.Text = _parameterMappingService?.GenerateSeparatorPreview(separatorTextBox.Text) ?? "value01 value02";
+            };
+            
+            return grid;
+        }
+        
+        private void PopulateComboBox(ComboBox combo, List<ParameterInfo> parameters)
+        {
+            combo.Items.Add("Select Parameter");
+            if (parameters != null)
+            {
+                foreach (var param in parameters)
+                {
+                    combo.Items.Add(param.Name);
+                }
+            }
+            combo.SelectedIndex = 0;
+        }
+        
+        #endregion
+
         #region Event Handlers
         private void RunAnalysisButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1430,6 +1997,8 @@ namespace RoomsManagerAddin
                 if (CancelButton != null)
                     CancelButton.Click -= CancelButton_Click;
 
+                // Note: Lambda expressions for parameter mapping buttons are automatically cleaned up with the window
+
                 // Clean up collections
                 _availableElementParameters?.Clear();
                 _availableElementParameters = null;
@@ -1450,7 +2019,10 @@ namespace RoomsManagerAddin
                 _currentElementFilter = null;
                 _currentFilter = null;
 
-                // Dispose controllers if they implement IDisposable
+                // Dispose services and controllers
+                _parameterMappingService?.Dispose();
+                _parameterMappingService = null;
+                
                 if (_elementController is IDisposable disposableElementController)
                     disposableElementController.Dispose();
                     

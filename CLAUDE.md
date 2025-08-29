@@ -24,8 +24,8 @@ dotnet build RoomsManagerAddin.csproj --configuration Release
 2. Deploy using PowerShell commands:
 
 ```powershell
-# Copy the newly built DLL
-powershell -Command "Copy-Item 'bin\\Debug\\RoomsManagerAddin.dll' 'C:\\Users\\$env:USERNAME\\AppData\\Roaming\\Autodesk\\Revit\\Addins\\2024\\'"
+# CORRECT: Copy from net48 subdirectory (where the DLL is actually built)
+powershell -Command "Copy-Item 'bin\\Debug\\net48\\RoomsManagerAddin.dll' 'C:\\Users\\$env:USERNAME\\AppData\\Roaming\\Autodesk\\Revit\\Addins\\2024\\'"
 
 # Copy the addin manifest
 powershell -Command "Copy-Item 'RoomsManagerAddin.addin' 'C:\\Users\\$env:USERNAME\\AppData\\Roaming\\Autodesk\\Revit\\Addins\\2024\\'"
@@ -37,9 +37,24 @@ powershell -Command "Get-ChildItem 'C:\\Users\\$env:USERNAME\\AppData\\Roaming\\
 #### Alternative Manual Deployment
 If the above commands don't work in your environment, use explicit paths:
 ```powershell
-powershell -Command "Copy-Item 'bin\\Debug\\RoomsManagerAddin.dll' 'C:\\Users\\dmitr\\AppData\\Roaming\\Autodesk\\Revit\\Addins\\2024\\'"
+# CORRECT: Include net48 directory path
+powershell -Command "Copy-Item 'bin\\Debug\\net48\\RoomsManagerAddin.dll' 'C:\\Users\\dmitr\\AppData\\Roaming\\Autodesk\\Revit\\Addins\\2024\\'"
 powershell -Command "Copy-Item 'RoomsManagerAddin.addin' 'C:\\Users\\dmitr\\AppData\\Roaming\\Autodesk\\Revit\\Addins\\2024\\'"
 ```
+
+#### Common Deployment Issues and Solutions
+
+**Problem**: `Cannot find path 'bin\Debug\RoomsManagerAddin.dll'`
+**Solution**: The DLL is built in `bin\Debug\net48\` directory, not directly in `bin\Debug\`. Always use the correct path with `net48` subdirectory.
+
+**Problem**: `The given path's format is not supported`
+**Solution**: Use explicit user paths instead of environment variables if $env:USERNAME expansion fails.
+
+**Problem**: Old version still loading in Revit
+**Solution**: 
+1. Verify the deployment timestamp matches your build time
+2. Completely restart Revit (don't just reload the add-in)
+3. Check that both DLL and .addin files are in the correct location
 
 #### Why Not Install.bat?
 The `Install.bat` file may sometimes deploy cached or old versions. Always use the PowerShell commands above for reliable deployment of the latest build.
@@ -47,6 +62,7 @@ The `Install.bat` file may sometimes deploy cached or old versions. Always use t
 #### After Deployment
 - Restart Revit 2024 to load the updated add-in
 - Check the "Add-ins" tab for the "RoomDataSync" panel
+- Verify the deployment timestamp in Windows Explorer matches your build time
 
 ## Architecture
 
