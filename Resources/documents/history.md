@@ -302,6 +302,51 @@ RoomsManagerAddin/
   - Clean removal of individual mapping rows
 - **File Size**: Increased to 179KB with full parameter mapping functionality
 
+### Phase 10: UI Polish and Bug Fixes (August 29, 2025 - Afternoon)
+- **Date**: August 29, 2025 - Afternoon
+- **Goal**: Polish parameter mapping UI and fix minor issues
+- **Scope**: Button alignment, dynamic headers, spacing fixes, and warning resolution
+- **Key Changes**:
+  - **Parameter Mapping Button Improvements**:
+    - Fixed button alignment: stacked trash (top) and plus (bottom) vertically
+    - Made plus button square and gray to match trash button styling
+    - Changed plus content from "+" text to "➕" emoji for better visual consistency
+    - Both buttons now use consistent `DeleteButton` style
+  - **Dynamic Container Heights**:
+    - Adjusted row proportions: filter containers (1.8*) vs parameter mapping (1.2*) for better balance
+    - Reduced green container bottom padding for better button proximity
+  - **Values Separator Field Enhancements**:
+    - Increased field width from 80px to 95px for better text visibility
+    - Fixed capitalization: "Values Separator" → "values separator"
+    - Added `TextTrimming="CharacterEllipsis"` for long text handling
+    - Fixed width containers prevent layout shifts when preview text grows
+  - **Dynamic Header Updates**:
+    - **Right panel header**: "Other Elements" → "Walls | Filter Elements" (matches left panel pattern)
+    - **Parameter mapping headers**: "Rooms → Category" → "Rooms → Walls" (shows actual category)
+    - Headers automatically update when category selected/cleared
+    - Added code in `OnElementCategoryChanged()` and `ClearElementSelection()` methods
+  - **Bottom Button Bar Redesign**:
+    - Added 3 new buttons: "Load Preset", "Save Preset", "Help"
+    - Renamed "Run Analysis" → "Run" for cleaner look
+    - All buttons use consistent width (90px) and styling via `ActionButton` style
+    - "Run" button uses `RunButton` style with darker background to stand out
+    - Fixed button spacing: all buttons have uniform 6px margins
+  - **PowerShell Deployment Script**:
+    - Created `deploy.ps1` for automated build and deployment
+    - Handles proper `bin\Debug\net48\` path and deployment verification
+    - Fixed PowerShell syntax errors and Unicode symbol issues
+- **Bug Fixes**:
+  - **Deprecated API Warnings**: Replaced `ElementId.IntegerValue` with `ElementId.Value` in:
+    - `Controllers\RoomWallAnalysisController.cs` line 131
+    - `Services\categories\Walls\WallBoundaryAnalysisService.cs` line 85
+  - All build warnings resolved for cleaner compilation
+- **User Experience**:
+  - Consistent button styling and spacing throughout interface
+  - Dynamic headers provide clear context about selected category
+  - Better proportioned layout with improved visual hierarchy
+  - Professional appearance with properly aligned controls
+- **File Size**: Maintained at ~180KB with enhanced functionality
+
 ---
 
-*Last Updated: August 29, 2025 - Added Phase 9: Parameter Mapping UI Enhancement*
+*Last Updated: August 29, 2025 - Added Phase 10: UI Polish and Bug Fixes*

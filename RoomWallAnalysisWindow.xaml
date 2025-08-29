@@ -105,6 +105,20 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="#202020"/>
         </Style>
+
+        <!-- Bottom Action Button Style -->
+        <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Width" Value="90"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <!-- Primary Run Button Style -->
+        <Style x:Key="RunButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Background" Value="#E8E8E8"/>
+            <Setter Property="BorderBrush" Value="#B4B4B4"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -122,8 +136,8 @@
             <!-- Left Column: Rooms filtering + parameter exchange -->
             <Grid Grid.Column="0" Margin="0,0,8,0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="2*"/>
-                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1.8*"/>
+                    <RowDefinition Height="1.2*"/>
                 </Grid.RowDefinitions>
 
                 <!-- Left Top: Filter rules panel -->
@@ -197,7 +211,7 @@
                 </GroupBox>
 
                 <!-- Left Bottom: Parameter Mapping (Rooms -> Category) -->
-                <GroupBox Grid.Row="1" Header="Parameter Mapping: Rooms → Category" 
+                <GroupBox x:Name="RoomsMappingGroupBox" Grid.Row="1" Header="Parameter Mapping: Rooms → Category" 
                           Margin="0,8,0,0" Padding="16" 
                           BorderBrush="#E0E0E0" BorderThickness="1" 
                           Background="White">
@@ -226,7 +240,7 @@
 
                             <!-- Main Mapping Controls -->
                             <Border x:Name="RoomsMappingContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
-                                    CornerRadius="4" Padding="12,8,12,12" Margin="0,0,0,16" Visibility="Collapsed">
+                                    CornerRadius="4" Padding="12,8,12,4" Margin="0,0,0,16" Visibility="Collapsed">
                                 <StackPanel>
                                     <!-- Override Checkbox Row -->
                                     <CheckBox x:Name="RoomsOverrideCheckBox" Content="Override existing values" 
@@ -262,21 +276,26 @@
                                         </StackPanel>
                                         
                                         <!-- Right side controls -->
-                                        <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Vertical" Margin="0,0,8,8">
-                                            <TextBlock Text="Values Separator" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
+                                        <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Vertical" Margin="0,0,8,8" Width="95">
+                                            <TextBlock Text="Values separator" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
                                             <TextBox x:Name="RoomsSeparatorTextBox" Style="{StaticResource ModernTextBox}" 
-                                                     Width="80" HorizontalAlignment="Left"/>
+                                                     Width="95" HorizontalAlignment="Left"/>
                                             <TextBlock x:Name="RoomsSeparatorPreview" Text="value01 value02" FontStyle="Italic" FontSize="9" 
-                                                       Foreground="#888888" Margin="0,2,0,0" HorizontalAlignment="Left"/>
+                                                       Foreground="#888888" Margin="0,2,0,0" HorizontalAlignment="Left" 
+                                                       Width="95" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                         
-                                        <Button x:Name="RoomsMappingAddButton" Grid.Row="0" Grid.Column="4" Content="+" 
-                                                Style="{StaticResource ModernButton}" VerticalAlignment="Bottom" 
-                                                Width="24" Height="24" FontSize="14" FontWeight="Bold" Margin="0,0,8,2"/>
-                                        
-                                        <Button x:Name="RoomsMappingRemoveButton" Grid.Row="0" Grid.Column="5" Content="🗑️" 
-                                                Style="{StaticResource DeleteButton}" VerticalAlignment="Bottom" 
-                                                Width="24" Height="24" FontSize="12" Margin="0,0,0,2"/>
+                                        <!-- Buttons stacked vertically -->
+                                        <StackPanel Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Orientation="Vertical" 
+                                                   VerticalAlignment="Bottom" Margin="0,0,0,2">
+                                            <Button x:Name="RoomsMappingRemoveButton" Content="🗑️" 
+                                                    Style="{StaticResource DeleteButton}" 
+                                                    Width="28" Height="28" FontSize="12" Margin="0,0,0,4"/>
+                                            
+                                            <Button x:Name="RoomsMappingAddButton" Content="➕" 
+                                                    Style="{StaticResource DeleteButton}" 
+                                                    Width="28" Height="28" FontSize="12" Margin="0,0,0,0"/>
+                                        </StackPanel>
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -289,8 +308,8 @@
             <!-- Right Column: Elements filtering + parameter exchange -->
             <Grid Grid.Column="1" Margin="8,0,0,0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="2*"/>
-                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="1.8*"/>
+                    <RowDefinition Height="1.2*"/>
                 </Grid.RowDefinitions>
 
                 <!-- Right Top: Other Elements panel -->
@@ -365,7 +384,7 @@
                 </GroupBox>
 
                 <!-- Right Bottom: Parameter Mapping (Category -> Rooms) -->
-                <GroupBox Grid.Row="1" Header="Parameter Mapping: Category → Rooms" 
+                <GroupBox x:Name="CategoryMappingGroupBox" Grid.Row="1" Header="Parameter Mapping: Category → Rooms" 
                           Margin="0,8,0,0" Padding="16" 
                           BorderBrush="#E0E0E0" BorderThickness="1" 
                           Background="White">
@@ -394,7 +413,7 @@
 
                             <!-- Main Mapping Controls -->
                             <Border x:Name="CategoryMappingContainer" Background="White" BorderBrush="#107C10" BorderThickness="2" 
-                                    CornerRadius="4" Padding="12,8,12,12" Margin="0,0,0,16" Visibility="Collapsed">
+                                    CornerRadius="4" Padding="12,8,12,4" Margin="0,0,0,16" Visibility="Collapsed">
                                 <StackPanel>
                                     <!-- Override Checkbox Row -->
                                     <CheckBox x:Name="CategoryOverrideCheckBox" Content="Override existing values" 
@@ -430,21 +449,26 @@
                                         </StackPanel>
                                         
                                         <!-- Right side controls -->
-                                        <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Vertical" Margin="0,0,8,8">
-                                            <TextBlock Text="Values Separator" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
+                                        <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Vertical" Margin="0,0,8,8" Width="95">
+                                            <TextBlock Text="Values separator" FontSize="11" Foreground="#666666" Margin="0,0,0,2"/>
                                             <TextBox x:Name="CategorySeparatorTextBox" Style="{StaticResource ModernTextBox}" 
-                                                     Width="80" HorizontalAlignment="Left"/>
+                                                     Width="95" HorizontalAlignment="Left"/>
                                             <TextBlock x:Name="CategorySeparatorPreview" Text="value01 value02" FontStyle="Italic" FontSize="9" 
-                                                       Foreground="#888888" Margin="0,2,0,0" HorizontalAlignment="Left"/>
+                                                       Foreground="#888888" Margin="0,2,0,0" HorizontalAlignment="Left" 
+                                                       Width="95" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                         
-                                        <Button x:Name="CategoryMappingAddButton" Grid.Row="0" Grid.Column="4" Content="+" 
-                                                Style="{StaticResource ModernButton}" VerticalAlignment="Bottom" 
-                                                Width="24" Height="24" FontSize="14" FontWeight="Bold" Margin="0,0,8,2"/>
-                                        
-                                        <Button x:Name="CategoryMappingRemoveButton" Grid.Row="0" Grid.Column="5" Content="🗑️" 
-                                                Style="{StaticResource DeleteButton}" VerticalAlignment="Bottom" 
-                                                Width="24" Height="24" FontSize="12" Margin="0,0,0,2"/>
+                                        <!-- Buttons stacked vertically -->
+                                        <StackPanel Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Orientation="Vertical" 
+                                                   VerticalAlignment="Bottom" Margin="0,0,0,2">
+                                            <Button x:Name="CategoryMappingRemoveButton" Content="🗑️" 
+                                                    Style="{StaticResource DeleteButton}" 
+                                                    Width="28" Height="28" FontSize="12" Margin="0,0,0,4"/>
+                                            
+                                            <Button x:Name="CategoryMappingAddButton" Content="➕" 
+                                                    Style="{StaticResource DeleteButton}" 
+                                                    Width="28" Height="28" FontSize="12" Margin="0,0,0,0"/>
+                                        </StackPanel>
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -465,8 +489,11 @@
             <Label x:Name="StatusLabel" Content="Ready" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="11" Foreground="#666666"/>
 
             <StackPanel Orientation="Horizontal" Margin="16,8,16,8" HorizontalAlignment="Right" Grid.Column="1">
-                <Button x:Name="RunAnalysisButton" Content="Run Analysis" Width="110" Height="32" Margin="0,0,6,0"/>
-                <Button x:Name="CancelButton" Content="Cancel" Width="70" Height="32"/>
+                <Button x:Name="LoadPresetButton" Content="Load Preset" Style="{StaticResource ActionButton}" Margin="0,0,6,0"/>
+                <Button x:Name="SavePresetButton" Content="Save Preset" Style="{StaticResource ActionButton}" Margin="0,0,6,0"/>
+                <Button x:Name="HelpButton" Content="Help" Style="{StaticResource ActionButton}" Margin="0,0,6,0"/>
+                <Button x:Name="RunAnalysisButton" Content="Run" Style="{StaticResource RunButton}" Margin="0,0,6,0"/>
+                <Button x:Name="CancelButton" Content="Cancel" Style="{StaticResource ActionButton}"/>
             </StackPanel>
         </Grid>
     </Grid>

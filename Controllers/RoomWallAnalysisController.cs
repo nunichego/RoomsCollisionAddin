@@ -128,7 +128,7 @@ namespace RoomsManagerAddin.Controllers
             _loggingService.WriteToLog($"CONTROLLER: Successfully converted {walls.Count} Wall objects");
             if (walls.Any())
             {
-                var firstFewWallIds = walls.Take(5).Select(w => w.Id.IntegerValue.ToString()).ToList();
+                var firstFewWallIds = walls.Take(5).Select(w => w.Id.Value.ToString()).ToList();
                 _loggingService.WriteToLog($"CONTROLLER: First 5 converted wall IDs: {string.Join(", ", firstFewWallIds)}");
             }
 

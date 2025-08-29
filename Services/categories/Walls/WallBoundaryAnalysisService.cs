@@ -82,7 +82,7 @@ namespace RoomsManagerAddin.Services.Categories.Walls
                             writeToLog($"    → Total walls in analysis set: {walls.Count}");
                             
                             // DEBUG: Show first few wall IDs from analysis set for comparison
-                            var firstFewWallIds = walls.Take(5).Select(w => w.Id.IntegerValue.ToString()).ToList();
+                            var firstFewWallIds = walls.Take(5).Select(w => w.Id.Value.ToString()).ToList();
                             writeToLog($"    → First 5 wall IDs in analysis set: {string.Join(", ", firstFewWallIds)}");
                             
                             foreach (var wall in roomWalls)

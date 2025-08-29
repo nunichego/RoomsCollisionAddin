@@ -254,6 +254,11 @@ namespace RoomsManagerAddin
                     UpdateParameterMappingLabels(); // Update the parameter mapping labels
                     PopulateParameterMappingComboBoxes(); // Populate the mapping ComboBoxes
                     
+                    // Update GroupBox headers with selected category name
+                    RightPanelGroupBox.Header = $"{selectedCategory.Name} | Filter Elements";
+                    RoomsMappingGroupBox.Header = $"Parameter Mapping: Rooms → {selectedCategory.Name}";
+                    CategoryMappingGroupBox.Header = $"Parameter Mapping: {selectedCategory.Name} → Rooms";
+                    
                     StatusLabel.Content = $"Selected {selectedCategory.Name}: {_filteredElements.Count} elements";
                 }
                 else
@@ -283,6 +288,11 @@ namespace RoomsManagerAddin
                 UpdateElementCounters();
                 UpdateParameterMappingLabels(); // Update the parameter mapping labels
                 ClearParameterMappingComboBoxes(); // Clear the mapping ComboBoxes
+                
+                // Reset GroupBox headers to default
+                RightPanelGroupBox.Header = "Other Elements";
+                RoomsMappingGroupBox.Header = "Parameter Mapping: Rooms → Category";
+                CategoryMappingGroupBox.Header = "Parameter Mapping: Category → Rooms";
                 
                 StatusLabel.Content = "No element category selected";
             }
