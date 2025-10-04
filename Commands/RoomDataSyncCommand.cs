@@ -7,6 +7,7 @@ using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using RoomsManagerAddin.Services;
 using RoomsManagerAddin.Services.Categories.Walls;
+using RoomsManagerAddin.Services.Categories.Floors;
 using RoomsManagerAddin.Models;
 using System.Windows.Interop;
 
@@ -55,24 +56,33 @@ namespace RoomsManagerAddin.Commands
 
             // Add services in dependency order
             services[typeof(IConfigurationService)] = new ConfigurationService();
-            services[typeof(GeometryService)] = new GeometryService();
+            var geometryService = new GeometryService();
+            services[typeof(GeometryService)] = geometryService;
             services[typeof(ElementCollectorService)] = new ElementCollectorService();
             services[typeof(ProgressService)] = new ProgressService();
             var loggingService = new LoggingService();
             services[typeof(LoggingService)] = loggingService;
             services[typeof(WallProcessingService)] = new WallProcessingService();
-            services[typeof(RoomProcessingService)] = new RoomProcessingService();
-            
-            // Add new ParameterMappingExecutionService and WallBoundaryAnalysisService
+            var roomProcessingService = new RoomProcessingService();
+            services[typeof(RoomProcessingService)] = roomProcessingService;
+
+            // Add ParameterMappingExecutionService, WallBoundaryAnalysisService, and FloorBoundaryAnalysisService
             var parameterMappingExecutionService = new ParameterMappingExecutionService(loggingService.WriteToLog);
             services[typeof(ParameterMappingExecutionService)] = parameterMappingExecutionService;
-            services[typeof(WallBoundaryAnalysisService)] = new WallBoundaryAnalysisService(
-                parameterMappingExecutionService
-            );
-            
-            // Add CollisionAnalysisService last since it depends on WallBoundaryAnalysisService
+
+            var wallBoundaryAnalysisService = new WallBoundaryAnalysisService(parameterMappingExecutionService);
+            services[typeof(WallBoundaryAnalysisService)] = wallBoundaryAnalysisService;
+
+            var floorBoundaryAnalysisService = new FloorBoundaryAnalysisService(
+                parameterMappingExecutionService,
+                geometryService,
+                roomProcessingService);
+            services[typeof(FloorBoundaryAnalysisService)] = floorBoundaryAnalysisService;
+
+            // Add CollisionAnalysisService last since it depends on both wall and floor services
             services[typeof(CollisionAnalysisService)] = new CollisionAnalysisService(
-                services[typeof(WallBoundaryAnalysisService)] as WallBoundaryAnalysisService
+                wallBoundaryAnalysisService,
+                floorBoundaryAnalysisService
             );
 
             return services;

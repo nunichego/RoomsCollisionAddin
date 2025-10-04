@@ -5,22 +5,21 @@ using System.Windows.Media.Imaging;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using RoomsManagerAddin.Services;
-using RoomsManagerAddin.Models;
 
-namespace RoomsManagerAddin
+namespace YourAddinName
 {
     /// <summary>
     /// Main Revit Add-in Application Class
-    /// Creates ribbon panel under Add-ins tab
+    /// Creates ribbon panel under shared "Aukett + Heese" tab
+    /// Handles the case where the tab already exists from other add-ins
     /// </summary>
     [Transaction(TransactionMode.Manual)]
     public class App : IExternalApplication
     {
         #region Constants
         private const string TAB_NAME = "Aukett + Heese";
-        private const string PANEL_NAME = "AH RoomsDataSync (Demo)";
-        private const string ASSEMBLY_PATH = "RoomsManagerAddin.dll";
+        private const string PANEL_NAME = "Your Panel Name";  // TODO: Change this to your panel name
+        private const string ASSEMBLY_PATH = "YourAddinName.dll";  // TODO: Change this to your DLL name
         #endregion
 
         #region Private Fields
@@ -52,7 +51,7 @@ namespace RoomsManagerAddin
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("Error", $"Failed to start RoomDataSync Add-in: {ex.Message}");
+                TaskDialog.Show("Error", $"Failed to start {PANEL_NAME} Add-in: {ex.Message}");
                 return Result.Failed;
             }
         }
@@ -68,7 +67,7 @@ namespace RoomsManagerAddin
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("Error", $"Error during RoomDataSync Add-in shutdown: {ex.Message}");
+                TaskDialog.Show("Error", $"Error during {PANEL_NAME} Add-in shutdown: {ex.Message}");
                 return Result.Failed;
             }
         }
@@ -77,6 +76,7 @@ namespace RoomsManagerAddin
         #region Private Methods
         /// <summary>
         /// Create the custom ribbon tab and panel
+        /// Handles the case where "Aukett + Heese" tab already exists
         /// </summary>
         private void CreateRibbonPanel(UIControlledApplication application)
         {
@@ -96,14 +96,8 @@ namespace RoomsManagerAddin
                 // Create ribbon panel under the custom tab
                 var panel = application.CreateRibbonPanel(TAB_NAME, PANEL_NAME);
 
-                // Add Room Collision Analysis button
-                AddRoomCollisionButton(panel);
-
-                // Add Settings button (for future tolerance settings)
-                AddSettingsButton(panel);
-
-                // Add Help button
-                AddHelpButton(panel);
+                // Add Hello World button
+                AddHelloWorldButton(panel);
             }
             catch (Exception ex)
             {
@@ -112,96 +106,25 @@ namespace RoomsManagerAddin
         }
 
         /// <summary>
-        /// Add the Room Collision Analysis button to the ribbon panel
+        /// Add the Hello World button to the ribbon panel
         /// </summary>
-        private void AddRoomCollisionButton(RibbonPanel panel)
+        private void AddHelloWorldButton(RibbonPanel panel)
         {
             try
             {
                 // Create button data
                 var buttonData = new PushButtonData(
-                    "RoomsMapping",
-                    "RoomsMapping",
+                    "HelloWorld",
+                    "Hello World",
                     _assemblyPath,
-                    "RoomsManagerAddin.Commands.RoomDataSyncCommand"
+                    "YourAddinName.Commands.HelloWorldCommand"  // TODO: Update namespace if changed
                 );
 
                 // Set button properties
-                buttonData.ToolTip = "Analyze room collisions and synchronize parameters with surrounding elements";
-                buttonData.LongDescription = "Performs comprehensive collision analysis between rooms and walls, updating room parameters with collision information.";
+                buttonData.ToolTip = "Click to show Hello World message";
+                buttonData.LongDescription = "A simple Hello World command to test the add-in is working correctly.";
 
-                // Load icon
-                var icon = LoadIcon("room-32.png");
-                if (icon != null)
-                {
-                    buttonData.LargeImage = icon;
-                }
-
-                // Create button
-                var button = panel.AddItem(buttonData) as PushButton;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to add Room Collision Analysis button: {ex.Message}", ex);
-            }
-        }
-
-        /// <summary>
-        /// Add the Settings button to the ribbon panel
-        /// </summary>
-        private void AddSettingsButton(RibbonPanel panel)
-        {
-            try
-            {
-                // Create button data
-                var buttonData = new PushButtonData(
-                    "RoomDataSyncSettings",
-                    "Settings",
-                    _assemblyPath,
-                    "RoomsManagerAddin.Commands.SettingsCommand"
-                );
-
-                // Set button properties
-                buttonData.ToolTip = "Configure collision analysis settings and tolerance values";
-                buttonData.LongDescription = "Open settings dialog to configure collision detection tolerance, volume thresholds, and other analysis parameters.";
-
-                // Load icon
-                var icon = LoadIcon("setting-32.png");
-                if (icon != null)
-                {
-                    buttonData.LargeImage = icon;
-                }
-
-                // Create button
-                var button = panel.AddItem(buttonData) as PushButton;
-            }
-            catch (Exception ex)
-            {
-                // Settings button is optional, don't fail if it can't be created
-                System.Diagnostics.Debug.WriteLine($"Could not create Settings button: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Add the Help button to the ribbon panel
-        /// </summary>
-        private void AddHelpButton(RibbonPanel panel)
-        {
-            try
-            {
-                // Create button data
-                var buttonData = new PushButtonData(
-                    "RoomDataSyncHelp",
-                    "Help",
-                    _assemblyPath,
-                    "RoomsManagerAddin.Commands.HelpCommand"
-                );
-
-                // Set button properties
-                buttonData.ToolTip = "Get help and documentation for RoomDataSync";
-                buttonData.LongDescription = "View help documentation, tutorials, and troubleshooting information for the RoomDataSync add-in.";
-
-                // Load icon
+                // Load icon (using help icon as example)
                 var icon = LoadIcon("help-32.png");
                 if (icon != null)
                 {
@@ -213,8 +136,7 @@ namespace RoomsManagerAddin
             }
             catch (Exception ex)
             {
-                // Help button is optional, don't fail if it can't be created
-                System.Diagnostics.Debug.WriteLine($"Could not create Help button: {ex.Message}");
+                throw new Exception($"Failed to add Hello World button: {ex.Message}", ex);
             }
         }
 
@@ -226,7 +148,7 @@ namespace RoomsManagerAddin
             try
             {
                 var assembly = Assembly.GetExecutingAssembly();
-                var resourceName = $"RoomsManagerAddin.Resources.icons.{iconName}";
+                var resourceName = $"YourAddinName.Resources.icons.{iconName}";  // TODO: Update namespace if changed
 
                 using (var stream = assembly.GetManifestResourceStream(resourceName))
                 {

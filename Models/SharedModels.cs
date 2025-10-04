@@ -84,12 +84,25 @@ namespace RoomsManagerAddin.Models
     }
 
     /// <summary>
+    /// UI model for floor items
+    /// </summary>
+    public class FloorItem
+    {
+        public string Name { get; set; }
+        public string LevelName { get; set; }
+        public string FloorTypeName { get; set; }
+        public double Area { get; set; }
+        public ElementId Id { get; set; }
+    }
+
+    /// <summary>
     /// Data container for initial data loading
     /// </summary>
     public class InitialDataResult
     {
         public List<RoomItem> Rooms { get; set; } = new List<RoomItem>();
         public List<WallItem> Walls { get; set; } = new List<WallItem>();
+        public List<FloorItem> Floors { get; set; } = new List<FloorItem>();
     }
 
     /// <summary>

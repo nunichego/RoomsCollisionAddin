@@ -31,12 +31,14 @@ namespace RoomsManagerAddin
         // Filtered data
         private List<RoomItem> _filteredRooms;
         private List<WallItem> _wallItems; // Original wall data for analysis
-        
+        private List<FloorItem> _floorItems; // Original floor data for analysis
+
         // Element panel data
         private List<CategoryInfo> _availableCategories;
         private List<ParameterInfo> _availableElementParameters;
         private ElementFilterConfiguration _currentElementFilter;
         private List<Element> _filteredElements;
+        private string _selectedCategoryName; // Track selected category name
         
         // Parameter mapping configurations
         private ParameterMappingConfiguration _roomsToCategoryMapping;
@@ -81,11 +83,12 @@ namespace RoomsManagerAddin
             {
                 StatusLabel.Content = "Loading data...";
                 
-                // Load room and wall data through controller
+                // Load room, wall, and floor data through controller
                 var data = _controller.LoadInitialData();
                 _roomItems = data.Rooms;
                 _filteredRooms = new List<RoomItem>(_roomItems);
                 _wallItems = data.Walls; // Store wall data for analysis
+                _floorItems = data.Floors; // Store floor data for analysis
                 
                 // Load element categories
                 _availableCategories = _elementController.GetAvailableCategories();
@@ -215,11 +218,14 @@ namespace RoomsManagerAddin
                 }
 
                 var selectedCategory = _availableCategories.FirstOrDefault(c => c.Name == selectedCategoryName);
-                
+
                 if (selectedCategory != null && _elementController != null)
                 {
+                    // Store selected category name for later use in RunAnalysis
+                    _selectedCategoryName = selectedCategoryName;
+
                     StatusLabel.Content = $"Loading {selectedCategory.Name} elements...";
-                    
+
                     // Select category in controller
                     _elementController.SelectCategory(selectedCategory);
                     
@@ -1460,7 +1466,7 @@ namespace RoomsManagerAddin
         private List<WallItem> ConvertElementsToWallItems(List<Element> elements)
         {
             var wallItems = new List<WallItem>();
-            
+
             foreach (var element in elements)
             {
                 if (element is Wall wall)
@@ -1476,7 +1482,7 @@ namespace RoomsManagerAddin
                             Height = GetSafeParameterValue(wall, BuiltInParameter.WALL_USER_HEIGHT_PARAM),
                             Id = wall.Id
                         };
-                        
+
                         wallItems.Add(wallItem);
                     }
                     catch (Exception ex)
@@ -1485,8 +1491,41 @@ namespace RoomsManagerAddin
                     }
                 }
             }
-            
+
             return wallItems;
+        }
+
+        private List<FloorItem> ConvertElementsToFloorItems(List<Element> elements)
+        {
+            var floorItems = new List<FloorItem>();
+
+            foreach (var element in elements)
+            {
+                if (element is Floor floor)
+                {
+                    try
+                    {
+                        var floorItem = new FloorItem
+                        {
+                            Name = floor.Name,
+                            LevelName = floor.LevelId != ElementId.InvalidElementId
+                                ? _document.GetElement(floor.LevelId)?.Name ?? "Unknown"
+                                : "Unknown",
+                            FloorTypeName = floor.FloorType?.Name ?? "Unknown",
+                            Area = floor.get_Parameter(BuiltInParameter.HOST_AREA_COMPUTED)?.AsDouble() ?? 0,
+                            Id = floor.Id
+                        };
+
+                        floorItems.Add(floorItem);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error converting floor {floor.Id} to FloorItem: {ex.Message}");
+                    }
+                }
+            }
+
+            return floorItems;
         }
 
         // Helper methods for safe wall parameter access
@@ -1945,31 +1984,55 @@ namespace RoomsManagerAddin
             {
                 StatusLabel.Content = "Running analysis...";
                 RunAnalysisButton.IsEnabled = false;
-                
-                // Run analysis through controller - use filtered elements from "Other Elements" panel
-                // Convert filtered Element objects back to WallItem objects for analysis
-                var wallItems = ConvertElementsToWallItems(_filteredElements ?? new List<Element>());
 
                 // Collect parameter mappings from UI
                 var parameterMappings = CollectParameterMappingsFromUI();
 
                 // Get window handle for save dialog ownership
                 var windowHelper = new WindowInteropHelper(this);
-                var results = _controller.RunAnalysis(_filteredRooms, wallItems, parameterMappings, windowHelper.Handle);
-                
+
+                List<RoomCollisionResult> results;
+
+                // Determine which analysis to run based on selected category
+                if (string.IsNullOrEmpty(_selectedCategoryName) || _selectedCategoryName == "Select Category")
+                {
+                    MessageBox.Show("Please select a category (Walls or Floors) before running analysis.", "Category Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (_selectedCategoryName.Equals("Floors", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Run floor analysis
+                    var floorItems = ConvertElementsToFloorItems(_filteredElements ?? new List<Element>());
+                    results = _controller.RunFloorAnalysis(_filteredRooms, floorItems, parameterMappings, windowHelper.Handle);
+                }
+                else if (_selectedCategoryName.Equals("Walls", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Run wall analysis
+                    var wallItems = ConvertElementsToWallItems(_filteredElements ?? new List<Element>());
+                    results = _controller.RunAnalysis(_filteredRooms, wallItems, parameterMappings, windowHelper.Handle);
+                }
+                else
+                {
+                    MessageBox.Show($"Analysis for category '{_selectedCategoryName}' is not yet supported.\n\nSupported categories: Walls, Floors", "Unsupported Category", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 // Show results
                 var totalRooms = results.Count;
                 var roomsWithCollisions = results.Count(r => r.WallsColliding > 0);
                 var totalCollisions = results.Sum(r => r.WallsColliding);
-                
+
+                var categoryLabel = _selectedCategoryName.Equals("Floors", StringComparison.OrdinalIgnoreCase) ? "Floor Intersections" : "Wall Collisions";
+
                 var message = $"Analysis Complete!\n\n" +
                              $"Total Rooms: {totalRooms}\n" +
-                             $"Rooms with Collisions: {roomsWithCollisions}\n" +
-                             $"Total Collisions: {totalCollisions}\n\n" +
+                             $"Rooms with {categoryLabel}: {roomsWithCollisions}\n" +
+                             $"Total {categoryLabel}: {totalCollisions}\n\n" +
                              $"Check the log file for detailed results.";
-                
+
                 MessageBox.Show(message, "RoomDataSync Results", MessageBoxButton.OK, MessageBoxImage.Information);
-                
+
                 StatusLabel.Content = "Analysis complete";
             }
             catch (Exception ex)
