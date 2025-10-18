@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using RoomsManagerAddin.Models;
-using RoomsManagerAddin.Controllers;
+using RoomsManagerAddin.Application.Controllers;
 using WpfGrid = System.Windows.Controls.Grid;
 using WpfButton = System.Windows.Controls.Button;
 using WpfLabel = System.Windows.Controls.Label;

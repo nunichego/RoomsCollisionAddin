@@ -1,10 +1,49 @@
 # Rooms Manager Add-in Development History
 
 ## Project Overview
-**Project Name**: Rooms Manager Add-in for Revit 2024  
-**Purpose**: Room collision detection and analysis  
-**Start Date**: August 2025  
-**Target Framework**: .NET Framework 4.8, Revit 2024 API  
+**Project Name**: Rooms Manager Add-in for Revit 2024
+**Purpose**: Room collision detection and analysis
+**Start Date**: August 2025
+**Target Framework**: .NET Framework 4.8, Revit 2024 API
+
+---
+
+## Major Milestone: Comprehensive Refactoring (October 2025)
+
+### Refactoring Phase 1 & 2.1 Complete (October 18, 2025)
+**Goal**: Modernize codebase with industry best practices
+**Duration**: 1 session (~4 hours)
+**Status**: Foundation + Infrastructure Migration Complete (25% of total refactoring)
+
+**Achievements**:
+- ✅ Implemented lightweight dependency injection container (no external deps)
+- ✅ Created layered architecture structure (Application/Domain/Infrastructure/Presentation/Core)
+- ✅ Established custom exception hierarchy with user-friendly messages
+- ✅ Migrated all 8 infrastructure services to new locations with interface implementations
+- ✅ Created 7 service interfaces with comprehensive XML documentation
+- ✅ Updated App.cs with DI container integration
+- ✅ Enhanced .gitignore with comprehensive C#/.NET patterns
+
+**Technical Improvements**:
+- Service-oriented architecture with proper separation of concerns
+- Interface-based design for all infrastructure services
+- Constructor injection pattern ready for implementation
+- Proper namespace organization: `RoomsManagerAddin.Infrastructure.*`
+- Exception handling with UserMessage/TechnicalDetails separation
+
+**Files Created/Modified**:
+- 27 new files created (directories, DI container, exceptions, interfaces)
+- 12 files moved (infrastructure + partial analysis services)
+- 3 files modified (.gitignore, App.cs, tasks.md)
+
+**Next Steps**:
+- Complete Phase 2: File Migration (remaining services, controllers, views, models)
+- Phase 3: Dependency Injection Integration
+- Phase 4: Error Handling Standardization
+- Phase 5: Comprehensive Documentation
+- Phase 6: Testing & Validation
+
+**Reference**: See `Resources/documents/refactoring_checkpoint_2025-10-18.md` for detailed status
 
 ---
 
@@ -122,12 +161,13 @@
 
 ---
 
-## Current Status (August 28, 2025)
+## Current Status (October 4, 2025)
 
 ### ✅ Completed Features
 - [x] Basic Revit add-in structure
 - [x] Room collision detection
-- [x] Wall geometry processing
+- [x] Wall geometry processing (Room Boundary API)
+- [x] Floor geometry processing (Solid Intersection)
 - [x] Curtain wall handling
 - [x] Parameter updates
 - [x] Progress tracking
@@ -142,18 +182,21 @@
 - [x] Generic element category support
 - [x] Advanced filtering for any element type
 - [x] Robust error handling and memory management
+- [x] Bidirectional parameter mapping (Rooms↔Elements)
+- [x] Walls category analysis (Room Boundary API)
+- [x] Floors category analysis (Solid Intersection with vertical expansion)
 
 ### 🔄 Current Focus
-- **Dynamic Element Analysis**: Expanding analysis capability beyond walls to any element type
-- **User Experience**: Intuitive category selection and filtering interface
-- **Code Quality**: Defensive programming and comprehensive error handling
+- **Multi-Category Support**: Successfully implemented Walls and Floors categories
+- **Category-Specific Algorithms**: Room Boundary API for Walls, Solid-based for Floors
+- **User Experience**: Seamless category switching with unified UI
 
 ### 📋 Next Steps
-- [ ] Implement collision analysis for non-wall elements (doors, windows, furniture, etc.)
-- [ ] Add element-specific analysis algorithms
-- [ ] Enhanced parameter mapping for different element types
-- [ ] Performance benchmarking for large multi-category analyses
-- [ ] User documentation for new dynamic filtering features
+- [ ] Implement collision analysis for additional categories (Ceilings, Roofs, etc.)
+- [ ] Add MEP element support (Ducts, Pipes, Cable Trays)
+- [ ] Implement Doors/Windows analysis (hosted element relationships)
+- [ ] Performance benchmarking for multi-category analyses
+- [ ] User documentation for category-specific analysis approaches
 
 ---
 
@@ -172,10 +215,22 @@ RoomsManagerAddin/
 RoomsManagerAddin/
 ├── App.cs
 ├── Commands/ (4 specialized commands)
-├── Services/ (8 specialized services)
-├── Models/ (Data models)
-├── ProgressWindow.xaml/.cs
-└── Resources/documents/ (This documentation)
+├── Services/
+│   ├── Core services (10+)
+│   └── categories/
+│       ├── Walls/
+│       │   └── WallBoundaryAnalysisService.cs (Room Boundary API)
+│       └── Floors/
+│           └── FloorBoundaryAnalysisService.cs (Solid Intersection)
+├── Controllers/ (RoomWallAnalysisController, GenericElementController)
+├── Models/ (SharedModels, FilterModels, AppSettings)
+├── Windows/ (ModernProgressWindow.xaml/.cs)
+├── UI/ (FilterRulesPanel.cs)
+├── RoomWallAnalysisWindow.xaml/.cs (Main window)
+└── Resources/
+    ├── icons/
+    ├── documents/ (This documentation)
+    └── templates/
 ```
 
 ---
@@ -203,6 +258,13 @@ RoomsManagerAddin/
 - **Performance monitoring**: Regular timing measurements
 - **Logging balance**: Need detailed logs for debugging but concise logs for usability
 - **Performance investigation**: Question assumptions and test alternatives
+
+### 5. Category-Specific Analysis Approaches
+- **Different algorithms for different needs**: Room Boundary API excels for walls, Solid Intersection works better for floors
+- **Vertical vs. Horizontal expansion**: Floor detection requires Z-axis room solid offset, not X/Y like walls
+- **Service modularity pays off**: Separate category services allow tailored algorithms without affecting other categories
+- **Code reuse with adaptation**: Leveraging existing solid-based logic (CollisionAnalysisService_SolidBased) as foundation
+- **Preserved architecture**: New categories added without modifying existing working services
 
 ---
 
@@ -347,6 +409,58 @@ RoomsManagerAddin/
   - Professional appearance with properly aligned controls
 - **File Size**: Maintained at ~180KB with enhanced functionality
 
+### Phase 11: Floors Category Support (October 4, 2025)
+- **Date**: October 4, 2025
+- **Goal**: Extend collision analysis functionality to support Floors category
+- **Scope**: Add Floors as a fully functional category alongside Walls with solid-based collision detection
+- **Key Changes**:
+  - **Data Models** (`Models/SharedModels.cs`):
+    - Added `FloorItem` model with properties: Name, LevelName, FloorTypeName, Area, Id
+    - Extended `InitialDataResult` to include Floors collection
+  - **New Service** (`Services/categories/Floors/FloorBoundaryAnalysisService.cs`):
+    - Created dedicated floor analysis service using solid intersection approach
+    - **Key difference from walls**: Uses **vertical room solid expansion** (±1cm along Z-axis) instead of horizontal
+    - Implements same optimizations as walls: bounding box pre-filtering, pre-processed solids
+    - Full parameter mapping support via `ParameterMappingExecutionService`
+    - Comprehensive progress reporting with `ProgressReporter`
+  - **Service Layer Updates**:
+    - `CollisionAnalysisService`: Added new method `AnalyzeRoomFloorsCollisions()` for floor analysis
+    - `ElementCollectorService`: Already had `GetFloors()` method ready to use
+  - **Controller Enhancements** (`Controllers/RoomWallAnalysisController.cs`):
+    - Added `FloorBoundaryAnalysisService` initialization with required dependencies (GeometryService, RoomProcessingService)
+    - New method `ApplyFloorFilters()` for level/type filtering of floors
+    - New method `RunFloorAnalysis()` orchestrates floor collision analysis with progress window
+    - Updated `LoadInitialData()` to load and convert floors from document
+  - **UI Integration** (`RoomWallAnalysisWindow.xaml.cs`):
+    - Added `_floorItems` field to store floor data
+    - Added `_selectedCategoryName` tracking to determine which analysis to run
+    - Created `ConvertElementsToFloorItems()` helper method for floor conversion
+    - Enhanced `RunAnalysisButton_Click()` to route to correct analysis based on category:
+      - "Walls" → `RunAnalysis()` (Room Boundary API)
+      - "Floors" → `RunFloorAnalysis()` (Solid Intersection)
+    - Added category validation and user-friendly error messages
+  - **Command Updates** (`Commands/RoomDataSyncCommand.cs`):
+    - Extended service initialization to include `FloorBoundaryAnalysisService`
+    - Proper dependency injection for GeometryService and RoomProcessingService
+- **Technical Implementation**:
+  - **Vertical Solid Expansion**: `CreateVerticallyExpandedRoomSolids()` creates two offset solids:
+    - +Z direction (upward, 1cm)
+    - -Z direction (downward, 1cm)
+  - **Analysis Flow**: Same 3-phase optimization as walls:
+    - Phase 1: Pre-process floor solids
+    - Phase 2: Pre-process room solids with vertical expansion
+    - Phase 3: Collision detection with bounding box → solid intersection
+  - **Reused Components**: Leveraged existing `CollisionAnalysisService_SolidBased.cs` logic as foundation
+  - **Preserved Architecture**: No changes to existing `WallBoundaryAnalysisService` - completely separate service
+- **User Experience**:
+  - Seamless category switching between Walls and Floors
+  - Same filtering capabilities for both categories
+  - Parameter mapping works identically for both directions (Rooms↔Floors)
+  - Clear result messages distinguish "Wall Collisions" vs "Floor Intersections"
+- **Performance**: Solid-based approach for floors maintains same optimization strategies as walls
+- **Build Status**: Clean build with only minor warnings in WallBoundaryAnalysisService (unused exception variables)
+- **Deployment**: Successfully deployed to Revit 2024 addins folder (227KB DLL)
+
 ---
 
-*Last Updated: August 29, 2025 - Added Phase 10: UI Polish and Bug Fixes*
+*Last Updated: October 4, 2025 - Added Phase 11: Floors Category Support*

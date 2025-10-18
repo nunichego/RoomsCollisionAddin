@@ -1,0 +1,176 @@
+using System;
+using Autodesk.Revit.DB;
+
+namespace RoomsManagerAddin.Domain.Models.Filtering
+{
+    public class RoomFilterRule : IFilterItem
+    {
+        public ParameterInfo Parameter { get; set; }
+        public FilterOperator Operator { get; set; }
+        public string Value { get; set; }
+
+        public bool Evaluate(Element element)
+        {
+            try
+            {
+                Parameter param = null;
+
+                if (Parameter.IsBuiltIn && Parameter.BuiltInParameterId.HasValue)
+                {
+                    param = element.get_Parameter(Parameter.BuiltInParameterId.Value);
+                }
+                else
+                {
+                    param = element.LookupParameter(Parameter.Name);
+                }
+
+                if (param == null)
+                {
+                    // Debug: Parameter not found
+                    System.Diagnostics.Debug.WriteLine($"Parameter '{Parameter.Name}' not found on element {element.Id}");
+                    return Operator == FilterOperator.HasNoValue;
+                }
+
+                var result = EvaluateParameter(param);
+
+                // Debug: Log evaluation
+                var paramValue = param.HasValue ? (param.AsValueString() ?? param.AsString() ?? param.AsDouble().ToString()) : "NULL";
+                System.Diagnostics.Debug.WriteLine($"Parameter '{Parameter.Name}' = '{paramValue}' {Operator} '{Value}' = {result}");
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error evaluating parameter '{Parameter.Name}': {ex.Message}");
+                return false;
+            }
+        }
+
+        private bool EvaluateParameter(Parameter param)
+        {
+            switch (Operator)
+            {
+                case FilterOperator.HasValue:
+                    return param.HasValue;
+
+                case FilterOperator.HasNoValue:
+                    return !param.HasValue;
+
+                case FilterOperator.Equals:
+                    return CompareValues(param, Value, (a, b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase));
+
+                case FilterOperator.NotEquals:
+                    return !CompareValues(param, Value, (a, b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase));
+
+                case FilterOperator.Contains:
+                    return CompareValues(param, Value, (a, b) => a.IndexOf(b, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                case FilterOperator.NotContains:
+                    return !CompareValues(param, Value, (a, b) => a.IndexOf(b, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                case FilterOperator.BeginsWith:
+                    return CompareValues(param, Value, (a, b) => a.StartsWith(b, StringComparison.OrdinalIgnoreCase));
+
+                case FilterOperator.EndsWith:
+                    return CompareValues(param, Value, (a, b) => a.EndsWith(b, StringComparison.OrdinalIgnoreCase));
+
+                case FilterOperator.GreaterThan:
+                    return CompareNumeric(param, Value, (a, b) => a > b);
+
+                case FilterOperator.LessThan:
+                    return CompareNumeric(param, Value, (a, b) => a < b);
+
+                case FilterOperator.GreaterThanOrEqual:
+                    return CompareNumeric(param, Value, (a, b) => a >= b);
+
+                case FilterOperator.LessThanOrEqual:
+                    return CompareNumeric(param, Value, (a, b) => a <= b);
+
+                default:
+                    return false;
+            }
+        }
+
+        private bool CompareValues(Parameter param, string value, Func<string, string, bool> comparer)
+        {
+            if (!param.HasValue || string.IsNullOrEmpty(value))
+                return false;
+
+            string paramValue = param.AsValueString() ?? param.AsString() ?? "";
+            return comparer(paramValue, value);
+        }
+
+        private bool CompareNumeric(Parameter param, string value, Func<double, double, bool> comparer)
+        {
+            if (!param.HasValue || !double.TryParse(value, out double compareValue))
+                return false;
+
+            double paramValue = 0;
+            switch (param.StorageType)
+            {
+                case StorageType.Double:
+                    paramValue = param.AsDouble();
+                    break;
+                case StorageType.Integer:
+                    paramValue = param.AsInteger();
+                    break;
+                default:
+                    return false;
+            }
+
+            return comparer(paramValue, compareValue);
+        }
+
+        public string GetDescription()
+        {
+            string operatorText;
+            switch (Operator)
+            {
+                case FilterOperator.Equals:
+                    operatorText = "equals";
+                    break;
+                case FilterOperator.NotEquals:
+                    operatorText = "does not equal";
+                    break;
+                case FilterOperator.Contains:
+                    operatorText = "contains";
+                    break;
+                case FilterOperator.NotContains:
+                    operatorText = "does not contain";
+                    break;
+                case FilterOperator.BeginsWith:
+                    operatorText = "begins with";
+                    break;
+                case FilterOperator.EndsWith:
+                    operatorText = "ends with";
+                    break;
+                case FilterOperator.GreaterThan:
+                    operatorText = "is greater than";
+                    break;
+                case FilterOperator.LessThan:
+                    operatorText = "is less than";
+                    break;
+                case FilterOperator.GreaterThanOrEqual:
+                    operatorText = "is greater than or equal to";
+                    break;
+                case FilterOperator.LessThanOrEqual:
+                    operatorText = "is less than or equal to";
+                    break;
+                case FilterOperator.HasValue:
+                    operatorText = "has a value";
+                    break;
+                case FilterOperator.HasNoValue:
+                    operatorText = "has no value";
+                    break;
+                default:
+                    operatorText = Operator.ToString();
+                    break;
+            }
+
+            if (Operator == FilterOperator.HasValue || Operator == FilterOperator.HasNoValue)
+                return $"Rooms {Parameter.Name} {operatorText}";
+
+            return $"Rooms {Parameter.Name} {operatorText} {Value}";
+        }
+    }
+}

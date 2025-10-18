@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Test-Path ''C:\\Users\\dmitr\\myworkspace\\RoomsCollisionAddin\\specs\\main\\checklists''\")",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''src\\Domain\\Services\\Analysis'' | Out-Null; New-Item -ItemType Directory -Force -Path ''src\\Domain\\Services\\Filtering'' | Out-Null; New-Item -ItemType Directory -Force -Path ''src\\Domain\\Services\\Processing'' | Out-Null; New-Item -ItemType Directory -Force -Path ''src\\Domain\\Services\\Mapping'' | Out-Null; Write-Output ''Created Domain Services directories''\")",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''src\\Domain\\Models\\Analysis'' | Out-Null; New-Item -ItemType Directory -Force -Path ''src\\Domain\\Models\\Filtering'' | Out-Null; New-Item -ItemType Directory -Force -Path ''src\\Domain\\Models\\Shared'' | Out-Null; New-Item -ItemType Directory -Force -Path ''src\\Domain\\Models\\Configuration'' | Out-Null; Write-Output ''Created Domain Models directories''\")",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''src\\Infrastructure\\RevitApi'' | Out-Null; New-Item -ItemType Directory -Force -Path ''src\\Infrastructure\\Logging'' | Out-Null; New-Item -ItemType Directory -Force -Path ''src\\Infrastructure\\Configuration'' | Out-Null; New-Item -ItemType Directory -Force -Path ''src\\Infrastructure\\Progress'' | Out-Null; Write-Output ''Created Infrastructure directories''\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

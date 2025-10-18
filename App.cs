@@ -5,14 +5,15 @@ using System.Windows.Media.Imaging;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using RoomsManagerAddin.Services;
+using RoomsManagerAddin.Infrastructure.Logging;
 using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Core.DependencyInjection;
 
 namespace RoomsManagerAddin
 {
     /// <summary>
     /// Main Revit Add-in Application Class
-    /// Creates ribbon panel under Add-ins tab
+    /// Creates ribbon panel under Add-ins tab and initializes dependency injection
     /// </summary>
     [Transaction(TransactionMode.Manual)]
     public class App : IExternalApplication
@@ -25,6 +26,7 @@ namespace RoomsManagerAddin
 
         #region Private Fields
         private static string _assemblyPath;
+        private static IServiceContainer _serviceContainer;
         #endregion
 
         #region Properties
@@ -32,6 +34,14 @@ namespace RoomsManagerAddin
         /// Assembly path for loading resources
         /// </summary>
         public static string AssemblyPath => _assemblyPath;
+
+        /// <summary>
+        /// Global service container for dependency injection
+        /// </summary>
+        /// <remarks>
+        /// Accessible to commands for resolving services
+        /// </remarks>
+        public static IServiceContainer ServiceContainer => _serviceContainer;
         #endregion
 
         #region IExternalApplication Implementation
@@ -42,6 +52,10 @@ namespace RoomsManagerAddin
         {
             try
             {
+                // Initialize dependency injection container
+                _serviceContainer = new ServiceContainer();
+                ConfigureServices(_serviceContainer);
+
                 // Get assembly path
                 _assemblyPath = Assembly.GetExecutingAssembly().Location;
 
@@ -71,6 +85,54 @@ namespace RoomsManagerAddin
                 TaskDialog.Show("Error", $"Error during RoomDataSync Add-in shutdown: {ex.Message}");
                 return Result.Failed;
             }
+        }
+        #endregion
+
+        #region Dependency Injection Configuration
+        /// <summary>
+        /// Configure dependency injection services
+        /// </summary>
+        /// <remarks>
+        /// Registers all services with appropriate lifetimes.
+        /// Note: This is a placeholder for Phase 1. Full service registration will be added in Phase 3.
+        /// </remarks>
+        /// <param name="services">The service container to configure</param>
+        private void ConfigureServices(IServiceContainer services)
+        {
+            // NOTE: Service registration will be completed in Phase 3 (DI Integration)
+            // For Phase 1, we just verify the container works
+
+            // Infrastructure services (Singleton) - interfaces will be implemented in Phase 2
+            // services.AddSingleton<ILoggingService, LoggingService>();
+            // services.AddSingleton<IConfigurationService, ConfigurationService>();
+
+            // Revit API services (Transient - Document-dependent)
+            // services.AddTransient<IElementCollectorService, ElementCollectorService>();
+            // services.AddTransient<IGeometryService, GeometryService>();
+            // services.AddTransient<IParameterUpdateService, ParameterUpdateService>();
+
+            // Analysis services (Transient)
+            // services.AddTransient<ICollisionAnalysisService, CollisionAnalysisService>();
+            // services.AddTransient<IWallBoundaryAnalysisService, WallBoundaryAnalysisService>();
+            // services.AddTransient<IFloorBoundaryAnalysisService, FloorBoundaryAnalysisService>();
+
+            // Filtering services (Transient)
+            // services.AddTransient<IRoomFilterService, RoomFilterService>();
+            // services.AddTransient<IGenericElementFilterService, GenericElementFilterService>();
+            // services.AddTransient<IRoomParameterDiscoveryService, RoomParameterDiscoveryService>();
+            // services.AddTransient<IElementParameterDiscoveryService, ElementParameterDiscoveryService>();
+
+            // Processing services (Transient)
+            // services.AddTransient<IRoomProcessingService, RoomProcessingService>();
+            // services.AddTransient<IWallProcessingService, WallProcessingService>();
+            // services.AddTransient<IParameterMappingExecutionService, ParameterMappingExecutionService>();
+
+            // Mapping services (Transient)
+            // services.AddTransient<IParameterMappingService, ParameterMappingService>();
+
+            // Progress reporting (Transient)
+            // services.AddTransient<IProgressReporter, ProgressReporter>();
+            // services.AddTransient<IProgressService, ProgressService>();
         }
         #endregion
 

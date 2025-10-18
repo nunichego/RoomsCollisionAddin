@@ -8,3 +8,22 @@ obj/
 /.idea/
 *.sln.docstates
 
+# Additional C#/.NET patterns
+packages/
+*.dll
+*.exe
+*.pdb
+*.nupkg
+.env*
+*.swp
+*.tmp
+.DS_Store
+Thumbs.db
+TestResults/
+*.coverage
+*.coveragexml
+
+# Revit specific
+*.rvt.lock
+*~
+
