@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
+using RoomsManagerAddin.Core.Exceptions;
 
 namespace RoomsManagerAddin.Infrastructure.RevitApi
 {
@@ -17,8 +18,15 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
         /// <summary>
         /// Get solid geometry from any element
         /// </summary>
+        /// <param name="element">The element to extract solid geometry from</param>
+        /// <returns>Solid geometry or null if no valid solid found</returns>
+        /// <exception cref="ArgumentNullException">Thrown when element is null</exception>
+        /// <exception cref="RevitApiException">Thrown when geometry extraction fails</exception>
         public Solid GetElementSolid(Element element)
         {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element), "Element cannot be null");
+
             try
             {
                 if (element is Wall wall)
@@ -28,18 +36,28 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
 
                 return ExtractSolidFromGeometry(element.get_Geometry(new Options()));
             }
-            catch (Exception)
+            catch (ArgumentNullException)
             {
-                // Error getting solid for element
-                return null;
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new RevitApiException($"extracting solid geometry from element {element.Id}", ex);
             }
         }
 
         /// <summary>
         /// Get solid geometry from a wall, handling both regular and curtain walls
         /// </summary>
+        /// <param name="wall">The wall to extract solid geometry from</param>
+        /// <returns>Solid geometry or null if no valid solid found</returns>
+        /// <exception cref="ArgumentNullException">Thrown when wall is null</exception>
+        /// <exception cref="RevitApiException">Thrown when geometry extraction fails</exception>
         public Solid GetWallSolid(Wall wall)
         {
+            if (wall == null)
+                throw new ArgumentNullException(nameof(wall), "Wall cannot be null");
+
             try
             {
                 if (wall.WallType.Kind == WallKind.Curtain)
@@ -50,10 +68,13 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
                 // For regular walls, use standard geometry extraction
                 return ExtractSolidFromGeometry(wall.get_Geometry(new Options()));
             }
-            catch (Exception)
+            catch (ArgumentNullException)
             {
-                // Error getting solid for wall
-                return null;
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new RevitApiException($"extracting solid geometry from wall {wall.Id}", ex);
             }
         }
 
@@ -92,8 +113,15 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
         /// <summary>
         /// Create a simple solid for curtain walls using their location line
         /// </summary>
+        /// <param name="wall">The curtain wall to create solid for</param>
+        /// <returns>Solid geometry or null if creation failed</returns>
+        /// <exception cref="ArgumentNullException">Thrown when wall is null</exception>
+        /// <exception cref="RevitApiException">Thrown when solid creation fails</exception>
         public Solid CreateCurtainWallSolid(Wall wall)
         {
+            if (wall == null)
+                throw new ArgumentNullException(nameof(wall), "Wall cannot be null");
+
             try
             {
                 if (wall.Location is LocationCurve locationCurve)
@@ -114,10 +142,13 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
                 // Could not create solid for curtain wall
                 return null;
             }
-            catch (Exception)
+            catch (ArgumentNullException)
             {
-                // Error creating curtain wall solid
-                return null;
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new RevitApiException($"creating solid for curtain wall {wall.Id}", ex);
             }
         }
 
@@ -165,18 +196,27 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
         /// <summary>
         /// Check if two solids intersect
         /// </summary>
+        /// <param name="solid1">First solid</param>
+        /// <param name="solid2">Second solid</param>
+        /// <returns>True if solids intersect, false otherwise</returns>
+        /// <exception cref="ArgumentNullException">Thrown when either solid is null</exception>
+        /// <exception cref="RevitApiException">Thrown when intersection check fails</exception>
         public bool SolidsIntersect(Solid solid1, Solid solid2)
         {
+            if (solid1 == null)
+                throw new ArgumentNullException(nameof(solid1), "First solid cannot be null");
+            if (solid2 == null)
+                throw new ArgumentNullException(nameof(solid2), "Second solid cannot be null");
+
             try
             {
                 var intersection = BooleanOperationsUtils.ExecuteBooleanOperation(
                     solid1, solid2, BooleanOperationsType.Intersect);
                 return intersection != null && intersection.Volume > 0;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Error checking solid intersection
-                return false;
+                throw new RevitApiException("checking solid intersection", ex);
             }
         }
     }

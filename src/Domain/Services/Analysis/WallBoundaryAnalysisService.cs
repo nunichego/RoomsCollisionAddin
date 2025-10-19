@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
+using RoomsManagerAddin.Core.Exceptions;
 using RoomsManagerAddin.Domain.Models.Analysis;
 using RoomsManagerAddin.Domain.Models.Filtering;
 using RoomsManagerAddin.Domain.Services.Processing;
@@ -154,19 +155,21 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
                         }
                         catch (Exception ex)
                         {
-                            // Could not get room geometry (detailed logging removed)
+                            // Could not get room geometry - non-critical, log and continue
+                            writeToLog?.Invoke($"Warning: Could not get geometry for room {room.Number}: {ex.Message}");
                         }
 
                         results.Add(result);
                     }
                     catch (Exception ex)
                     {
-                        // Error analyzing room (detailed logging removed)
+                        // Error analyzing room - log and add failed result
+                        writeToLog?.Invoke($"ERROR: Failed to analyze room {room.Number}: {ex.Message}");
                         results.Add(new RoomCollisionResult
                         {
                             RoomName = room.Name,
                             RoomNumber = room.Number,
-                            ErrorMessage = ex.Message
+                            ErrorMessage = $"Analysis failed: {ex.Message}"
                         });
                     }
                 }
@@ -315,7 +318,8 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
                         }
                         catch (Exception ex)
                         {
-                            // Could not process boundary segment (detailed logging removed)
+                            // Could not process boundary segment - non-critical, log and continue
+                            writeToLog?.Invoke($"Warning: Could not process boundary segment: {ex.Message}");
                         }
                     }
                 }
@@ -324,9 +328,11 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
             }
             catch (Exception ex)
             {
-                // Error getting boundary segments (detailed logging removed)
+                // Error getting boundary segments - log and return null
+                writeToLog?.Invoke($"ERROR: Failed to get boundary segments: {ex.Message}");
+                return null;
             }
-            
+
             return boundaryWalls;
         }
     }

@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
+using RoomsManagerAddin.Core.Exceptions;
 
 namespace RoomsManagerAddin.Infrastructure.RevitApi
 {
@@ -17,8 +19,15 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
         /// <summary>
         /// Get all rooms from the document
         /// </summary>
+        /// <param name="document">The Revit document to collect rooms from</param>
+        /// <returns>List of rooms with area greater than 0</returns>
+        /// <exception cref="ArgumentNullException">Thrown when document is null</exception>
+        /// <exception cref="RevitApiException">Thrown when Revit API operations fail</exception>
         public List<Room> GetRooms(Document document)
         {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document), "Document cannot be null");
+
             try
             {
                 var collector = new FilteredElementCollector(document);
@@ -29,21 +38,26 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
                                    .Where(r => r.Area > 0)
                                    .ToList();
 
-                // Found rooms
                 return rooms;
             }
-                         catch (System.Exception)
-             {
-                 // Error collecting rooms
-                 return new List<Room>();
-             }
+            catch (Exception ex)
+            {
+                throw new RevitApiException("collecting rooms", ex);
+            }
         }
 
         /// <summary>
         /// Get all walls from the document
         /// </summary>
+        /// <param name="document">The Revit document to collect walls from</param>
+        /// <returns>List of walls with valid wall types</returns>
+        /// <exception cref="ArgumentNullException">Thrown when document is null</exception>
+        /// <exception cref="RevitApiException">Thrown when Revit API operations fail</exception>
         public List<Wall> GetWalls(Document document)
         {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document), "Document cannot be null");
+
             try
             {
                 var collector = new FilteredElementCollector(document);
@@ -52,21 +66,26 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
                                    .Where(w => w.WallType != null)
                                    .ToList();
 
-                // Found walls
                 return walls;
             }
-                         catch (System.Exception)
-             {
-                 // Error collecting walls
-                 return new List<Wall>();
-             }
+            catch (Exception ex)
+            {
+                throw new RevitApiException("collecting walls", ex);
+            }
         }
 
         /// <summary>
         /// Get all floors from the document
         /// </summary>
+        /// <param name="document">The Revit document to collect floors from</param>
+        /// <returns>List of floors with valid floor types</returns>
+        /// <exception cref="ArgumentNullException">Thrown when document is null</exception>
+        /// <exception cref="RevitApiException">Thrown when Revit API operations fail</exception>
         public List<Floor> GetFloors(Document document)
         {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document), "Document cannot be null");
+
             try
             {
                 var collector = new FilteredElementCollector(document);
@@ -75,14 +94,12 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
                                     .Where(f => f.FloorType != null)
                                     .ToList();
 
-                // Found floors
                 return floors;
             }
-                         catch (System.Exception)
-             {
-                 // Error collecting floors
-                 return new List<Floor>();
-             }
+            catch (Exception ex)
+            {
+                throw new RevitApiException("collecting floors", ex);
+            }
         }
     }
 }
