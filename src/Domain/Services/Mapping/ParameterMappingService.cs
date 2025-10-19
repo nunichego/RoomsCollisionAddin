@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Filtering;
 
 namespace RoomsManagerAddin.Domain.Services.Mapping
 {
     /// <summary>
     /// Service for managing parameter mapping between Rooms and other element categories
     /// </summary>
-    public class ParameterMappingService
+    public class ParameterMappingService : IParameterMappingService
     {
         #region Fields
         private Document _document;

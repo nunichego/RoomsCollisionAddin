@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Analysis;
+using RoomsManagerAddin.Domain.Models.Filtering;
+using RoomsManagerAddin.Infrastructure.Progress;
 
 namespace RoomsManagerAddin.Domain.Services.Analysis
 {
@@ -11,7 +13,7 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
     /// Service for analyzing collisions between rooms and other elements
     /// UPDATED: Supports Room Boundary API for walls, solid intersection for floors
     /// </summary>
-    public class CollisionAnalysisService
+    public class CollisionAnalysisService : ICollisionAnalysisService
     {
         private readonly WallBoundaryAnalysisService _wallBoundaryService;
         private readonly FloorBoundaryAnalysisService _floorBoundaryService;

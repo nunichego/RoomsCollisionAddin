@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Analysis;
+using RoomsManagerAddin.Domain.Models.Filtering;
+using RoomsManagerAddin.Domain.Services.Processing;
+using RoomsManagerAddin.Infrastructure.Progress;
+using RoomsManagerAddin.Infrastructure.RevitApi;
 
 namespace RoomsManagerAddin.Domain.Services.Analysis
 {
@@ -11,7 +15,7 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
     /// Service for analyzing room-floor relationships using solid intersection
     /// OPTIMIZED: Uses vertical (Z-axis) solid expansion for floor collision detection
     /// </summary>
-    public class FloorBoundaryAnalysisService
+    public class FloorBoundaryAnalysisService : IFloorBoundaryAnalysisService
     {
         private readonly ParameterMappingExecutionService _parameterMappingExecutionService;
         private readonly GeometryService _geometryService;

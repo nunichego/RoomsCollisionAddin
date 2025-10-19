@@ -4,13 +4,12 @@ using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 
-
 namespace RoomsManagerAddin.Domain.Services.Processing
 {
     /// <summary>
     /// Service for processing room geometry and creating solids
     /// </summary>
-    public class RoomProcessingService
+    public class RoomProcessingService : IRoomProcessingService
     {
         public RoomProcessingService()
         {

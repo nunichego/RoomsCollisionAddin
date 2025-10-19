@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Analysis;
+using RoomsManagerAddin.Domain.Models.Filtering;
+using RoomsManagerAddin.Domain.Services.Processing;
+using RoomsManagerAddin.Infrastructure.Progress;
 
 namespace RoomsManagerAddin.Domain.Services.Analysis
 {
@@ -11,7 +14,7 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
     /// Service for analyzing room-wall relationships using Revit's Room Boundary API
     /// OPTIMIZED: Uses native room boundary detection instead of solid intersection
     /// </summary>
-    public class WallBoundaryAnalysisService
+    public class WallBoundaryAnalysisService : IWallBoundaryAnalysisService
     {
         private readonly ParameterMappingExecutionService _parameterMappingExecutionService;
         

@@ -2,14 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Filtering;
+using RoomsManagerAddin.Domain.Models.Shared;
+using RoomsManagerAddin.Infrastructure.Logging;
+using RoomsManagerAddin.Infrastructure.RevitApi;
 
 namespace RoomsManagerAddin.Domain.Services.Filtering
 {
     /// <summary>
     /// Generic filtering service that can work with any Revit element category
     /// </summary>
-    public class GenericElementFilterService
+    public class GenericElementFilterService : IGenericElementFilterService
     {
         private readonly Document _document;
         private readonly ElementParameterDiscoveryService _parameterDiscoveryService;

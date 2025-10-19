@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Filtering;
+using RoomsManagerAddin.Infrastructure.Progress;
 
 namespace RoomsManagerAddin.Domain.Services.Processing
 {
@@ -11,7 +12,7 @@ namespace RoomsManagerAddin.Domain.Services.Processing
     /// Service for executing parameter mappings between rooms and other elements
     /// Replaces the old Filter Tag update system with user-configured parameter mappings
     /// </summary>
-    public class ParameterMappingExecutionService
+    public class ParameterMappingExecutionService : IParameterMappingExecutionService
     {
         #region Fields
         private readonly Action<string> _writeToLog;

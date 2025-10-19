@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Filtering;
+using RoomsManagerAddin.Infrastructure.Logging;
 
 namespace RoomsManagerAddin.Domain.Services.Filtering
 {
-    public class RoomParameterDiscoveryService
+    public class RoomParameterDiscoveryService : IRoomParameterDiscoveryService
     {
         private readonly Document _document;
         private List<ParameterInfo> _cachedParameters;

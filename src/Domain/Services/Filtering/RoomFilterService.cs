@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Filtering;
+using RoomsManagerAddin.Domain.Models.Shared;
+using RoomsManagerAddin.Infrastructure.Logging;
+using RoomsManagerAddin.Infrastructure.RevitApi;
 
 namespace RoomsManagerAddin.Domain.Services.Filtering
 {
-    public class RoomFilterService
+    public class RoomFilterService : IRoomFilterService
     {
         private readonly Document _document;
         private readonly RoomParameterDiscoveryService _parameterDiscoveryService;
