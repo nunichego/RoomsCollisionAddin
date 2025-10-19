@@ -59,6 +59,9 @@
 
     <!-- Exclude old UI files (migrated to src/Presentation/Controls/) -->
     <Compile Remove="UI\FilterRulesPanel.cs" />
+
+    <!-- Exclude test files (separate test project) -->
+    <Compile Remove="tests\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
