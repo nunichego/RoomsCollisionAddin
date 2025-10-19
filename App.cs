@@ -226,7 +226,7 @@ namespace RoomsManagerAddin
                     "RoomsMapping",
                     "RoomsMapping",
                     _assemblyPath,
-                    "RoomsManagerAddin.Commands.RoomDataSyncCommand"
+                    "RoomsManagerAddin.Application.Commands.RoomDataSyncCommand"
                 );
 
                 // Set button properties
@@ -261,7 +261,7 @@ namespace RoomsManagerAddin
                     "RoomDataSyncSettings",
                     "Settings",
                     _assemblyPath,
-                    "RoomsManagerAddin.Commands.SettingsCommand"
+                    "RoomsManagerAddin.Application.Commands.SettingsCommand"
                 );
 
                 // Set button properties
@@ -297,7 +297,7 @@ namespace RoomsManagerAddin
                     "RoomDataSyncHelp",
                     "Help",
                     _assemblyPath,
-                    "RoomsManagerAddin.Commands.HelpCommand"
+                    "RoomsManagerAddin.Application.Commands.HelpCommand"
                 );
 
                 // Set button properties
