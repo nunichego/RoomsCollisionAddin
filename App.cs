@@ -120,16 +120,12 @@ namespace RoomsManagerAddin
             services.AddTransient<RoomsManagerAddin.Infrastructure.RevitApi.IElementCollectorService,
                                   RoomsManagerAddin.Infrastructure.RevitApi.ElementCollectorService>();
 
-            // Note: GeometryService, ParameterUpdateService, ProgressReporter, and ProgressService
-            // registered as concrete classes (interfaces to be fully implemented in future phases)
-            services.AddTransient<RoomsManagerAddin.Infrastructure.RevitApi.GeometryService>(
+            // Register infrastructure services (GeometryService also implements IGeometryService via duck typing)
+            services.AddTransient<RoomsManagerAddin.Infrastructure.RevitApi.IGeometryService>(
                 c => new RoomsManagerAddin.Infrastructure.RevitApi.GeometryService());
-            services.AddTransient<RoomsManagerAddin.Infrastructure.RevitApi.ParameterUpdateService>(
-                c => new RoomsManagerAddin.Infrastructure.RevitApi.ParameterUpdateService());
-            services.AddTransient<RoomsManagerAddin.Infrastructure.Progress.ProgressReporter>(
-                c => new RoomsManagerAddin.Infrastructure.Progress.ProgressReporter(null));
-            services.AddTransient<RoomsManagerAddin.Infrastructure.Progress.ProgressService>(
-                c => new RoomsManagerAddin.Infrastructure.Progress.ProgressService());
+
+            // Note: ParameterUpdateService, ProgressService, ProgressReporter don't fully implement interfaces yet
+            // TODO: Complete interface implementations in future phase
 
             // ============================================
             // Domain Services - Analysis (Transient)

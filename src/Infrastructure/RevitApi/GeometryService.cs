@@ -9,7 +9,7 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
     /// <summary>
     /// Service for handling geometry operations
     /// </summary>
-    public class GeometryService
+    public class GeometryService : IGeometryService
     {
         public GeometryService()
         {
@@ -218,6 +218,25 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
             {
                 throw new RevitApiException("checking solid intersection", ex);
             }
+        }
+
+        /// <summary>
+        /// Check if two solids intersect (alias for SolidsIntersect)
+        /// </summary>
+        public bool DoSolidsIntersect(Solid solid1, Solid solid2)
+        {
+            return SolidsIntersect(solid1, solid2);
+        }
+
+        /// <summary>
+        /// Get bounding box for an element
+        /// </summary>
+        public BoundingBoxXYZ GetBoundingBox(Element element)
+        {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
+
+            return element.get_BoundingBox(null);
         }
     }
 }
