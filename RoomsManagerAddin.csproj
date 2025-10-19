@@ -56,6 +56,9 @@
     <Compile Remove="Models\ProgressInfo.cs" />
     <Compile Remove="Models\AppSettings.cs" />
     <!-- Keep ModelExports.cs for backward compatibility -->
+
+    <!-- Exclude old UI files (migrated to src/Presentation/Controls/) -->
+    <Compile Remove="UI\FilterRulesPanel.cs" />
   </ItemGroup>
 
   <ItemGroup>
