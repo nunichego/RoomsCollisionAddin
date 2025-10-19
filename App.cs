@@ -93,46 +93,82 @@ namespace RoomsManagerAddin
         /// Configure dependency injection services
         /// </summary>
         /// <remarks>
-        /// Registers all services with appropriate lifetimes.
-        /// Note: This is a placeholder for Phase 1. Full service registration will be added in Phase 3.
+        /// Registers all services with appropriate lifetimes:
+        /// - Singleton: Infrastructure services (Logging, Configuration)
+        /// - Transient: Document-dependent services (all others)
         /// </remarks>
         /// <param name="services">The service container to configure</param>
         private void ConfigureServices(IServiceContainer services)
         {
-            // NOTE: Service registration will be completed in Phase 3 (DI Integration)
-            // For Phase 1, we just verify the container works
+            // ============================================
+            // Infrastructure Services (Singleton)
+            // ============================================
+            services.AddSingleton<RoomsManagerAddin.Infrastructure.Logging.ILoggingService,
+                                  RoomsManagerAddin.Infrastructure.Logging.LoggingService>();
 
-            // Infrastructure services (Singleton) - interfaces will be implemented in Phase 2
-            // services.AddSingleton<ILoggingService, LoggingService>();
-            // services.AddSingleton<IConfigurationService, ConfigurationService>();
+            services.AddSingleton<RoomsManagerAddin.Infrastructure.Configuration.IConfigurationService,
+                                  RoomsManagerAddin.Infrastructure.Configuration.ConfigurationService>();
 
-            // Revit API services (Transient - Document-dependent)
-            // services.AddTransient<IElementCollectorService, ElementCollectorService>();
-            // services.AddTransient<IGeometryService, GeometryService>();
-            // services.AddTransient<IParameterUpdateService, ParameterUpdateService>();
+            // ============================================
+            // Revit API Services (Transient - Document-dependent)
+            // ============================================
+            services.AddTransient<RoomsManagerAddin.Infrastructure.RevitApi.IElementCollectorService,
+                                  RoomsManagerAddin.Infrastructure.RevitApi.ElementCollectorService>();
 
-            // Analysis services (Transient)
-            // services.AddTransient<ICollisionAnalysisService, CollisionAnalysisService>();
-            // services.AddTransient<IWallBoundaryAnalysisService, WallBoundaryAnalysisService>();
-            // services.AddTransient<IFloorBoundaryAnalysisService, FloorBoundaryAnalysisService>();
+            // Note: GeometryService, ParameterUpdateService, ProgressReporter, and ProgressService
+            // registered as concrete classes (interfaces to be fully implemented in future phases)
+            services.AddTransient<RoomsManagerAddin.Infrastructure.RevitApi.GeometryService>(
+                c => new RoomsManagerAddin.Infrastructure.RevitApi.GeometryService());
+            services.AddTransient<RoomsManagerAddin.Infrastructure.RevitApi.ParameterUpdateService>(
+                c => new RoomsManagerAddin.Infrastructure.RevitApi.ParameterUpdateService());
+            services.AddTransient<RoomsManagerAddin.Infrastructure.Progress.ProgressReporter>(
+                c => new RoomsManagerAddin.Infrastructure.Progress.ProgressReporter(null));
+            services.AddTransient<RoomsManagerAddin.Infrastructure.Progress.ProgressService>(
+                c => new RoomsManagerAddin.Infrastructure.Progress.ProgressService());
 
-            // Filtering services (Transient)
-            // services.AddTransient<IRoomFilterService, RoomFilterService>();
-            // services.AddTransient<IGenericElementFilterService, GenericElementFilterService>();
-            // services.AddTransient<IRoomParameterDiscoveryService, RoomParameterDiscoveryService>();
-            // services.AddTransient<IElementParameterDiscoveryService, ElementParameterDiscoveryService>();
+            // ============================================
+            // Domain Services - Analysis (Transient)
+            // ============================================
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Analysis.ICollisionAnalysisService,
+                                  RoomsManagerAddin.Domain.Services.Analysis.CollisionAnalysisService>();
 
-            // Processing services (Transient)
-            // services.AddTransient<IRoomProcessingService, RoomProcessingService>();
-            // services.AddTransient<IWallProcessingService, WallProcessingService>();
-            // services.AddTransient<IParameterMappingExecutionService, ParameterMappingExecutionService>();
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Analysis.IWallBoundaryAnalysisService,
+                                  RoomsManagerAddin.Domain.Services.Analysis.WallBoundaryAnalysisService>();
 
-            // Mapping services (Transient)
-            // services.AddTransient<IParameterMappingService, ParameterMappingService>();
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Analysis.IFloorBoundaryAnalysisService,
+                                  RoomsManagerAddin.Domain.Services.Analysis.FloorBoundaryAnalysisService>();
 
-            // Progress reporting (Transient)
-            // services.AddTransient<IProgressReporter, ProgressReporter>();
-            // services.AddTransient<IProgressService, ProgressService>();
+            // ============================================
+            // Domain Services - Filtering (Transient)
+            // ============================================
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Filtering.IRoomFilterService,
+                                  RoomsManagerAddin.Domain.Services.Filtering.RoomFilterService>();
+
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Filtering.IGenericElementFilterService,
+                                  RoomsManagerAddin.Domain.Services.Filtering.GenericElementFilterService>();
+
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Filtering.IRoomParameterDiscoveryService,
+                                  RoomsManagerAddin.Domain.Services.Filtering.RoomParameterDiscoveryService>();
+
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Filtering.IElementParameterDiscoveryService,
+                                  RoomsManagerAddin.Domain.Services.Filtering.ElementParameterDiscoveryService>();
+
+            // ============================================
+            // Domain Services - Processing (Transient)
+            // ============================================
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Processing.IRoomProcessingService,
+                                  RoomsManagerAddin.Domain.Services.Processing.RoomProcessingService>();
+
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Processing.IParameterMappingExecutionService,
+                                  RoomsManagerAddin.Domain.Services.Processing.ParameterMappingExecutionService>();
+
+            // ============================================
+            // Domain Services - Mapping (Transient)
+            // ============================================
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Mapping.IParameterMappingService,
+                                  RoomsManagerAddin.Domain.Services.Mapping.ParameterMappingService>();
+
+            // Note: WallProcessingService doesn't have interface yet - to be added if needed
         }
         #endregion
 

@@ -26,11 +26,5 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
         /// <param name="document">The Revit document</param>
         /// <returns>List of all floors</returns>
         List<Floor> GetFloors(Document document);
-
-        /// <summary>Get elements by category</summary>
-        /// <param name="document">The Revit document</param>
-        /// <param name="category">The built-in category to filter</param>
-        /// <returns>List of elements in the specified category</returns>
-        List<Element> GetElementsByCategory(Document document, BuiltInCategory category);
     }
 }

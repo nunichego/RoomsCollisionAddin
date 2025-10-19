@@ -1,6 +1,6 @@
 using System;
 using System.Windows;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Shared;
 
 namespace RoomsManagerAddin.Infrastructure.Progress
 {

@@ -8,7 +8,7 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
     /// <summary>
     /// Service for collecting elements from Revit document
     /// </summary>
-    public class ElementCollectorService
+    public class ElementCollectorService : IElementCollectorService
     {
         public ElementCollectorService()
         {
