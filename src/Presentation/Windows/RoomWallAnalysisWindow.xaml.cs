@@ -49,13 +49,20 @@ namespace RoomsManagerAddin.Presentation.Windows
         #endregion
 
         #region Constructor
-        public RoomWallAnalysisWindow(Document document)
+        /// <summary>
+        /// Creates a new RoomWallAnalysisWindow with dependency-injected controller.
+        /// </summary>
+        public RoomWallAnalysisWindow(
+            Document document,
+            RoomWallAnalysisController controller,
+            GenericElementController elementController,
+            ParameterMappingService parameterMappingService)
         {
-            _document = document;
+            _document = document ?? throw new ArgumentNullException(nameof(document));
+            _controller = controller ?? throw new ArgumentNullException(nameof(controller));
+            _elementController = elementController ?? throw new ArgumentNullException(nameof(elementController));
+            _parameterMappingService = parameterMappingService ?? throw new ArgumentNullException(nameof(parameterMappingService));
             _elementCollector = new ElementCollectorService();
-            _controller = new RoomWallAnalysisController(document);
-            _elementController = new GenericElementController(document);
-            _parameterMappingService = new ParameterMappingService(document);
             _availableParameters = _controller.GetAvailableRoomParameters();
             _currentFilter = _controller.CreateFilterConfiguration("Room Filter");
 

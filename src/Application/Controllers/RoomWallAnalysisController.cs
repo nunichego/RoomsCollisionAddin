@@ -4,7 +4,9 @@ using System.Linq;
 using System.Windows.Forms;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
-using RoomsManagerAddin.Models;
+using RoomsManagerAddin.Domain.Models.Analysis;
+using RoomsManagerAddin.Domain.Models.Filtering;
+using RoomsManagerAddin.Domain.Models.Shared;
 using RoomsManagerAddin.Infrastructure.Logging;
 using RoomsManagerAddin.Infrastructure.RevitApi;
 using RoomsManagerAddin.Domain.Services.Analysis;
@@ -16,41 +18,36 @@ namespace RoomsManagerAddin.Application.Controllers
 {
     /// <summary>
     /// Orchestrates data loading, filtering, and analysis for the Rooms-Walls workflow.
-    /// Keeps UI code in the form and computation/coordination here.
+    /// Uses dependency injection for all services.
     /// </summary>
     public class RoomWallAnalysisController
     {
         private readonly Document _document;
-        private readonly ElementCollectorService _elementCollectorService;
-
-        // Services used by analysis
-        private readonly ParameterMappingExecutionService _parameterMappingExecutionService;
-        private readonly WallBoundaryAnalysisService _wallBoundaryAnalysisService;
-        private readonly CollisionAnalysisService _collisionAnalysisService;
-        private readonly LoggingService _loggingService;
+        private readonly IElementCollectorService _elementCollectorService;
+        private readonly ICollisionAnalysisService _collisionAnalysisService;
+        private readonly ILoggingService _loggingService;
         private readonly RoomFilterService _roomFilterService;
 
-        public RoomWallAnalysisController(Document document)
+        /// <summary>
+        /// Creates a new RoomWallAnalysisController with dependency injection.
+        /// </summary>
+        /// <param name="document">The Revit document</param>
+        /// <param name="elementCollectorService">Service for collecting elements</param>
+        /// <param name="collisionAnalysisService">Service for collision analysis</param>
+        /// <param name="loggingService">Service for logging</param>
+        /// <param name="roomFilterService">Service for room filtering</param>
+        public RoomWallAnalysisController(
+            Document document,
+            IElementCollectorService elementCollectorService,
+            ICollisionAnalysisService collisionAnalysisService,
+            ILoggingService loggingService,
+            RoomFilterService roomFilterService)
         {
-            _document = document;
-            _elementCollectorService = new ElementCollectorService();
-
-            _loggingService = new LoggingService();
-            _parameterMappingExecutionService = new ParameterMappingExecutionService(_loggingService.WriteToLog);
-            _roomFilterService = new RoomFilterService(_document, _loggingService);
-
-            // Initialize category-specific analysis services
-            _wallBoundaryAnalysisService = new WallBoundaryAnalysisService(_parameterMappingExecutionService);
-
-            var geometryService = new GeometryService();
-            var roomProcessingService = new RoomProcessingService();
-            var floorBoundaryAnalysisService = new FloorBoundaryAnalysisService(
-                _parameterMappingExecutionService,
-                geometryService,
-                roomProcessingService);
-
-            // Initialize collision analysis service with both wall and floor services
-            _collisionAnalysisService = new CollisionAnalysisService(_wallBoundaryAnalysisService, floorBoundaryAnalysisService);
+            _document = document ?? throw new ArgumentNullException(nameof(document));
+            _elementCollectorService = elementCollectorService ?? throw new ArgumentNullException(nameof(elementCollectorService));
+            _collisionAnalysisService = collisionAnalysisService ?? throw new ArgumentNullException(nameof(collisionAnalysisService));
+            _loggingService = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
+            _roomFilterService = roomFilterService ?? throw new ArgumentNullException(nameof(roomFilterService));
         }
 
         public InitialDataResult LoadInitialData()

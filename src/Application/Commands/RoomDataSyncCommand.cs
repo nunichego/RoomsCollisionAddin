@@ -31,11 +31,15 @@ namespace RoomsManagerAddin.Application.Commands
                 var uiApp = commandData.Application;
                 var document = uiApp.ActiveUIDocument.Document;
 
-                // Initialize services
-                var services = InitializeServices();
+                // Get global service container from App
+                var serviceContainer = App.ServiceContainer;
+                if (serviceContainer == null)
+                {
+                    throw new InvalidOperationException("Service container not initialized");
+                }
 
-                // Show main dialog
-                var result = ShowMainDialog(document, services, uiApp);
+                // Show main dialog with DI
+                var result = ShowMainDialog(document, serviceContainer, uiApp);
 
                 return result;
             }
@@ -91,24 +95,44 @@ namespace RoomsManagerAddin.Application.Commands
         }
 
         /// <summary>
-        /// Show the main RoomDataSync interface window
+        /// Show the main RoomDataSync interface window using DI
         /// </summary>
-        private Result ShowMainDialog(Document document, Dictionary<Type, object> services, UIApplication uiApp)
+        private Result ShowMainDialog(Document document, Core.DependencyInjection.IServiceContainer serviceContainer, UIApplication uiApp)
         {
             try
             {
-                // Check if document has rooms
-                var elementCollector = services[typeof(ElementCollectorService)] as ElementCollectorService;
-                var rooms = elementCollector.GetRooms(document);
+                // Resolve services from DI container
+                var elementCollector = serviceContainer.Resolve<IElementCollectorService>();
+                var collisionAnalysisService = serviceContainer.Resolve<ICollisionAnalysisService>();
+                var loggingService = serviceContainer.Resolve<ILoggingService>();
+                var roomFilterService = new RoomFilterService(document, (LoggingService)loggingService);
 
+                // Check if document has rooms
+                var rooms = elementCollector.GetRooms(document);
                 if (!rooms.Any())
                 {
                     TaskDialog.Show("RoomDataSync", "No rooms found in the current document.\n\nPlease create rooms before running the analysis.");
                     return Result.Succeeded;
                 }
 
-                // Show the main interface window (WPF-based with native Revit styling)
-                var analysisWindow = new RoomWallAnalysisWindow(document);
+                // Create controllers with DI
+                var analysisController = new Application.Controllers.RoomWallAnalysisController(
+                    document,
+                    elementCollector,
+                    collisionAnalysisService,
+                    loggingService,
+                    roomFilterService);
+
+                var elementController = new Application.Controllers.GenericElementController(document);
+                var parameterMappingService = new Domain.Services.Mapping.ParameterMappingService(document);
+
+                // Show the main interface window
+                var analysisWindow = new RoomWallAnalysisWindow(
+                    document,
+                    analysisController,
+                    elementController,
+                    parameterMappingService);
+
                 // Set Revit as the owner window to keep dialog on top and modal
                 new WindowInteropHelper(analysisWindow) { Owner = uiApp.MainWindowHandle };
                 analysisWindow.ShowDialog();
@@ -117,7 +141,7 @@ namespace RoomsManagerAddin.Application.Commands
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("RoomDataSync Error", $"Error opening interface: {ex.Message}");
+                TaskDialog.Show("RoomDataSync Error", $"Error opening interface: {ex.Message}\n\nStack: {ex.StackTrace}");
                 return Result.Failed;
             }
         }
