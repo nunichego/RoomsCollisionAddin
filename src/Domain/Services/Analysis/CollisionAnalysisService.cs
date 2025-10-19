@@ -16,12 +16,12 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
     /// </summary>
     public class CollisionAnalysisService : ICollisionAnalysisService
     {
-        private readonly WallBoundaryAnalysisService _wallBoundaryService;
-        private readonly FloorBoundaryAnalysisService _floorBoundaryService;
+        private readonly IWallBoundaryAnalysisService _wallBoundaryService;
+        private readonly IFloorBoundaryAnalysisService _floorBoundaryService;
 
         public CollisionAnalysisService(
-            WallBoundaryAnalysisService wallBoundaryService,
-            FloorBoundaryAnalysisService floorBoundaryService)
+            IWallBoundaryAnalysisService wallBoundaryService,
+            IFloorBoundaryAnalysisService floorBoundaryService)
         {
             _wallBoundaryService = wallBoundaryService;
             _floorBoundaryService = floorBoundaryService;

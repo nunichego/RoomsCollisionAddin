@@ -54,47 +54,6 @@ namespace RoomsManagerAddin.Application.Commands
 
         #region Private Methods
         /// <summary>
-        /// Initialize services
-        /// </summary>
-        private Dictionary<Type, object> InitializeServices()
-        {
-            var services = new Dictionary<Type, object>();
-
-            // Add services in dependency order
-            services[typeof(IConfigurationService)] = new ConfigurationService();
-            var geometryService = new GeometryService();
-            services[typeof(GeometryService)] = geometryService;
-            services[typeof(ElementCollectorService)] = new ElementCollectorService();
-            services[typeof(ProgressService)] = new ProgressService();
-            var loggingService = new LoggingService();
-            services[typeof(LoggingService)] = loggingService;
-            services[typeof(WallProcessingService)] = new WallProcessingService();
-            var roomProcessingService = new RoomProcessingService();
-            services[typeof(RoomProcessingService)] = roomProcessingService;
-
-            // Add ParameterMappingExecutionService, WallBoundaryAnalysisService, and FloorBoundaryAnalysisService
-            var parameterMappingExecutionService = new ParameterMappingExecutionService(loggingService.WriteToLog);
-            services[typeof(ParameterMappingExecutionService)] = parameterMappingExecutionService;
-
-            var wallBoundaryAnalysisService = new WallBoundaryAnalysisService(parameterMappingExecutionService);
-            services[typeof(WallBoundaryAnalysisService)] = wallBoundaryAnalysisService;
-
-            var floorBoundaryAnalysisService = new FloorBoundaryAnalysisService(
-                parameterMappingExecutionService,
-                geometryService,
-                roomProcessingService);
-            services[typeof(FloorBoundaryAnalysisService)] = floorBoundaryAnalysisService;
-
-            // Add CollisionAnalysisService last since it depends on both wall and floor services
-            services[typeof(CollisionAnalysisService)] = new CollisionAnalysisService(
-                wallBoundaryAnalysisService,
-                floorBoundaryAnalysisService
-            );
-
-            return services;
-        }
-
-        /// <summary>
         /// Show the main RoomDataSync interface window using DI
         /// </summary>
         private Result ShowMainDialog(Document document, Core.DependencyInjection.IServiceContainer serviceContainer, UIApplication uiApp)
