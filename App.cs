@@ -164,8 +164,15 @@ namespace RoomsManagerAddin
             services.AddTransient<RoomsManagerAddin.Domain.Services.Processing.IRoomProcessingService,
                                   RoomsManagerAddin.Domain.Services.Processing.RoomProcessingService>();
 
-            services.AddTransient<RoomsManagerAddin.Domain.Services.Processing.IParameterMappingExecutionService,
-                                  RoomsManagerAddin.Domain.Services.Processing.ParameterMappingExecutionService>();
+            // ParameterMappingExecutionService requires Action<string> for logging
+            // Register with factory that gets ILoggingService and creates Action<string>
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Processing.IParameterMappingExecutionService>(
+                container =>
+                {
+                    var loggingService = container.Resolve<ILoggingService>();
+                    return new RoomsManagerAddin.Domain.Services.Processing.ParameterMappingExecutionService(
+                        loggingService.WriteToLog);
+                });
 
             // ============================================
             // Domain Services - Mapping (Transient)
