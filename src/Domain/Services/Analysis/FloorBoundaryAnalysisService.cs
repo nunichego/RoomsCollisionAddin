@@ -18,14 +18,14 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
     /// </summary>
     public class FloorBoundaryAnalysisService : IFloorBoundaryAnalysisService
     {
-        private readonly ParameterMappingExecutionService _parameterMappingExecutionService;
-        private readonly GeometryService _geometryService;
-        private readonly RoomProcessingService _roomProcessingService;
+        private readonly IParameterMappingExecutionService _parameterMappingExecutionService;
+        private readonly IGeometryService _geometryService;
+        private readonly IRoomProcessingService _roomProcessingService;
 
         public FloorBoundaryAnalysisService(
-            ParameterMappingExecutionService parameterMappingExecutionService,
-            GeometryService geometryService,
-            RoomProcessingService roomProcessingService)
+            IParameterMappingExecutionService parameterMappingExecutionService,
+            IGeometryService geometryService,
+            IRoomProcessingService roomProcessingService)
         {
             _parameterMappingExecutionService = parameterMappingExecutionService;
             _geometryService = geometryService;

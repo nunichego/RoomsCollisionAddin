@@ -25,5 +25,11 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
         /// <param name="solid2">Second solid</param>
         /// <returns>True if solids intersect</returns>
         bool DoSolidsIntersect(Solid solid1, Solid solid2);
+
+        /// <summary>Check if two solids intersect (alias for DoSolidsIntersect)</summary>
+        /// <param name="solid1">First solid</param>
+        /// <param name="solid2">Second solid</param>
+        /// <returns>True if solids intersect</returns>
+        bool SolidsIntersect(Solid solid1, Solid solid2);
     }
 }

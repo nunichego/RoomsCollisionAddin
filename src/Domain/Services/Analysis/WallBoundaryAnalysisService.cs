@@ -17,9 +17,9 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
     /// </summary>
     public class WallBoundaryAnalysisService : IWallBoundaryAnalysisService
     {
-        private readonly ParameterMappingExecutionService _parameterMappingExecutionService;
-        
-        public WallBoundaryAnalysisService(ParameterMappingExecutionService parameterMappingExecutionService)
+        private readonly IParameterMappingExecutionService _parameterMappingExecutionService;
+
+        public WallBoundaryAnalysisService(IParameterMappingExecutionService parameterMappingExecutionService)
         {
             _parameterMappingExecutionService = parameterMappingExecutionService;
         }
