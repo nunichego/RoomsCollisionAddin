@@ -34,34 +34,12 @@
     <EmbeddedResource Include="Resources\icons\help-32.png" />
   </ItemGroup>
 
-  <!-- Exclude template files and drafts from build -->
+  <!-- Exclude template files from build (kept for reference) -->
   <ItemGroup>
     <Compile Remove="Resources\templates\**\*.cs" />
     <Page Remove="Resources\templates\**\*.xaml" />
     <None Remove="Resources\templates\**\*" />
     <EmbeddedResource Remove="Resources\templates\**\*" />
-    <Page Remove="UI\drafts\**\*.xaml" />
-    <Compile Remove="ProgressWindow.xaml.cs" />
-
-    <!-- Exclude old folder structure (migrated to src/) -->
-    <Compile Remove="Services\**\*.cs" />
-    <Compile Remove="Controllers\**\*.cs" />
-    <Compile Remove="Commands\**\*.cs" />
-    <Compile Remove="Windows\**\*.cs" />
-    <Page Remove="Windows\**\*.xaml" />
-
-    <!-- Exclude old model files (split into individual classes in src/Domain/Models/) -->
-    <Compile Remove="Models\FilterModels.cs" />
-    <Compile Remove="Models\SharedModels.cs" />
-    <Compile Remove="Models\ProgressInfo.cs" />
-    <Compile Remove="Models\AppSettings.cs" />
-    <!-- Keep ModelExports.cs for backward compatibility -->
-
-    <!-- Exclude old UI files (migrated to src/Presentation/Controls/) -->
-    <Compile Remove="UI\FilterRulesPanel.cs" />
-
-    <!-- Exclude test files (separate test project) -->
-    <Compile Remove="tests\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
