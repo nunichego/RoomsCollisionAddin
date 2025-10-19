@@ -361,6 +361,139 @@
   - Always add proper using directives in Controller and Command files
   - Maintain separation between category-specific services
 
+### 10. Post-Deployment DI Fixes (October 19, 2025)
+
+#### Error Series: Dependency Injection Configuration Issues After Refactoring v2.0
+
+**Context**: After completing Refactoring v2.0 (Phases 2-6) and first deployment to Revit, encountered series of "Service not registered" errors due to incomplete DI configuration.
+
 ---
 
-*Last Updated: October 4, 2025 - Added Floors Category Implementation Success*
+#### Error #1: Command namespace mismatch
+- **Date**: October 19, 2025
+- **Error**: `Failed to initialize the add-in "RoomsMapping" because the class "RoomsManagerAddin.Commands.RoomDataSyncCommand" cannot be found`
+- **Root Cause**: After refactoring Phase 3, commands moved from `RoomsManagerAddin.Commands.*` to `RoomsManagerAddin.Application.Commands.*`, but App.cs ribbon registration still used old namespaces
+- **Solution**: Updated 3 button registrations in App.cs:
+  - RoomDataSyncCommand (line 229)
+  - SettingsCommand (line 264)
+  - HelpCommand (line 300)
+- **Files Changed**: App.cs
+- **Prevention**: When moving classes to new namespaces, search entire codebase for string references to old namespaces
+
+---
+
+#### Error #2: Concrete types in CollisionAnalysisService constructor
+- **Date**: October 19, 2025
+- **Error**: `Service of type WallBoundaryAnalysisService is not registered`
+- **Root Cause**: `CollisionAnalysisService` constructor used concrete types (`WallBoundaryAnalysisService`, `FloorBoundaryAnalysisService`) instead of interfaces
+- **Solution**:
+  - Changed constructor parameters to use `IWallBoundaryAnalysisService` and `IFloorBoundaryAnalysisService`
+  - Removed dead code: `InitializeServices()` method (40+ lines of manual service creation)
+- **Files Changed**:
+  - src/Domain/Services/Analysis/CollisionAnalysisService.cs
+  - src/Application/Commands/RoomDataSyncCommand.cs
+- **Impact**: Removed 40+ lines of dead code, proper SOLID Dependency Inversion
+- **Prevention**: Always use interface types in constructor parameters, never concrete implementations
+
+---
+
+#### Error #3: Incomplete service interface definitions
+- **Date**: October 19, 2025
+- **Error**: 9 compilation errors - methods not found in interfaces
+  - `IParameterMappingExecutionService.ValidateAllMappings` not found
+  - `IParameterMappingExecutionService.ExecuteRoomToElementMappingsBatch` not found
+  - `IGeometryService.SolidsIntersect` not found
+  - etc.
+- **Root Cause**: During Phase 3 refactoring, interfaces were created but left incomplete with comment "Interface kept minimal for Phase 3"
+- **Solution**: Completed all interface definitions:
+  1. **IParameterMappingExecutionService** - added 5 methods:
+     - SetProgressReporter(ProgressReporter)
+     - ExecuteRoomToElementMappings(...)
+     - ExecuteRoomToElementMappingsBatch(...)
+     - ExecuteElementToRoomMappings(...)
+     - ValidateAllMappings(...)
+  2. **IGeometryService** - added 1 method:
+     - SolidsIntersect(Solid, Solid) - alias for DoSolidsIntersect
+  3. Updated service implementations to use interfaces:
+     - WallBoundaryAnalysisService: `ParameterMappingExecutionService` → `IParameterMappingExecutionService`
+     - FloorBoundaryAnalysisService: 3 concrete types → 3 interfaces
+- **Files Changed**:
+  - src/Domain/Services/Processing/IParameterMappingExecutionService.cs
+  - src/Infrastructure/RevitApi/IGeometryService.cs
+  - src/Domain/Services/Analysis/WallBoundaryAnalysisService.cs
+  - src/Domain/Services/Analysis/FloorBoundaryAnalysisService.cs
+- **Prevention**: When creating interfaces during refactoring, complete them immediately, don't leave "minimal" placeholders
+
+---
+
+#### Error #4: Action<string> not registered in DI
+- **Date**: October 19, 2025
+- **Error**: `Service of type Action\`1 is not registered`
+- **Root Cause**: `ParameterMappingExecutionService` constructor requires `Action<string>` for logging, but DI container didn't know how to resolve this delegate type
+- **Solution**: Used factory registration pattern (already supported by ServiceContainer):
+  ```csharp
+  services.AddTransient<IParameterMappingExecutionService>(
+      container => {
+          var loggingService = container.Resolve<ILoggingService>();
+          return new ParameterMappingExecutionService(loggingService.WriteToLog);
+      });
+  ```
+- **Benefits**:
+  - No need to modify service constructor (backward compatible)
+  - Proper dependency chain: Factory → ILoggingService → Action<string>
+  - Uses existing factory support in custom ServiceContainer
+- **Files Changed**: App.cs (service registration)
+- **Prevention**: For services with non-standard dependencies (delegates, primitives), use factory registration
+
+---
+
+#### Error #5: IGeometryService interface not fully implemented
+- **Date**: October 19, 2025
+- **Error**: `Service of type IGeometryService is not registered`
+- **Root Cause**:
+  1. GeometryService didn't implement IGeometryService interface (missing `: IGeometryService`)
+  2. GeometryService was missing 2 interface methods: `DoSolidsIntersect()` and `GetBoundingBox()`
+- **Solution**:
+  1. Added missing methods to GeometryService:
+     ```csharp
+     public bool DoSolidsIntersect(Solid s1, Solid s2) => SolidsIntersect(s1, s2);
+     public BoundingBoxXYZ GetBoundingBox(Element e) => e.get_BoundingBox(null);
+     ```
+  2. Made GeometryService implement interface: `public class GeometryService : IGeometryService`
+  3. Registered in DI with interface: `services.AddTransient<IGeometryService>(c => new GeometryService())`
+- **Files Changed**:
+  - src/Infrastructure/RevitApi/GeometryService.cs
+  - App.cs
+- **Prevention**: When creating interfaces, ensure ALL implementations fully implement them before registration
+
+---
+
+#### Summary Statistics
+- **Total Errors Fixed**: 5 major DI configuration issues
+- **Commits Created**: 5
+- **Files Modified**: ~10
+- **Lines Changed**: ~150
+- **Build Status**: ✅ 0 errors, 0 warnings
+- **Deployment**: ✅ Successful (235 KB DLL)
+- **Testing**: ✅ Add-in loads and opens window successfully
+
+#### Lessons Learned
+1. **Complete interfaces immediately** - Don't leave "minimal" or placeholder interfaces
+2. **Use interfaces in constructors** - Always prefer `IService` over concrete `Service`
+3. **Factory pattern for delegates** - Use factory registration for non-standard dependencies
+4. **Verify full implementation** - Ensure classes implement ALL interface methods before adding `: IInterface`
+5. **Search for string references** - When refactoring namespaces, grep for all string references (not just code)
+
+#### Prevention Strategy
+**Future Refactoring Checklist**:
+- [ ] Complete all interface definitions immediately
+- [ ] Update ALL string references to class names (not just using statements)
+- [ ] Use interfaces in ALL constructor parameters
+- [ ] Verify interface implementation before adding `: IInterface`
+- [ ] Use factory registration for delegates/primitives
+- [ ] Test deployment immediately after refactoring
+- [ ] Run smoke test in Revit before marking phase complete
+
+---
+
+*Last Updated: October 19, 2025 - Post-Deployment DI Fixes Complete*
