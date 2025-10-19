@@ -5,6 +5,7 @@ using System.Windows.Media.Imaging;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using RoomsManagerAddin.Core.ErrorHandling;
 using RoomsManagerAddin.Infrastructure.Logging;
 using RoomsManagerAddin.Models;
 using RoomsManagerAddin.Core.DependencyInjection;
@@ -55,6 +56,10 @@ namespace RoomsManagerAddin
                 // Initialize dependency injection container
                 _serviceContainer = new ServiceContainer();
                 ConfigureServices(_serviceContainer);
+
+                // Initialize GlobalErrorHandler with logging service
+                var loggingService = _serviceContainer.Resolve<Infrastructure.Logging.ILoggingService>();
+                GlobalErrorHandler.Initialize(loggingService);
 
                 // Get assembly path
                 _assemblyPath = Assembly.GetExecutingAssembly().Location;

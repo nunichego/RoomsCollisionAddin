@@ -4,6 +4,8 @@ using System.Linq;
 using System.Windows.Forms;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
+using Autodesk.Revit.UI;
+using RoomsManagerAddin.Core.Exceptions;
 using RoomsManagerAddin.Domain.Models.Analysis;
 using RoomsManagerAddin.Domain.Models.Filtering;
 using RoomsManagerAddin.Domain.Models.Shared;
@@ -206,10 +208,24 @@ namespace RoomsManagerAddin.Application.Controllers
                 _loggingService.WriteToLog($"Analysis completed - {results.Count} results generated");
                 return results;
             }
+            catch (RoomsManagerException rme)
+            {
+                analysisException = rme;
+                _loggingService.WriteToLog($"Analysis failed: {rme.Message}");
+                _loggingService.WriteToLog($"Technical Details: {rme.TechnicalDetails}");
+                if (rme.ShowToUser)
+                {
+                    TaskDialog.Show("Room-Wall Analysis Error", rme.UserMessage ?? rme.Message);
+                }
+                throw;
+            }
             catch (Exception ex)
             {
                 analysisException = ex;
-                _loggingService.WriteToLog($"Analysis failed: {ex.Message}");
+                _loggingService.WriteToLog($"Unexpected error during analysis: {ex.Message}");
+                _loggingService.WriteToLog($"Stack Trace: {ex.StackTrace}");
+                TaskDialog.Show("Room-Wall Analysis Error",
+                    $"An unexpected error occurred during the analysis.\n\n{ex.Message}\n\nPlease check the log file for details.");
                 throw;
             }
             finally
@@ -278,10 +294,24 @@ namespace RoomsManagerAddin.Application.Controllers
                 _loggingService.WriteToLog($"Floor Analysis completed - {results.Count} results generated");
                 return results;
             }
+            catch (RoomsManagerException rme)
+            {
+                analysisException = rme;
+                _loggingService.WriteToLog($"Floor Analysis failed: {rme.Message}");
+                _loggingService.WriteToLog($"Technical Details: {rme.TechnicalDetails}");
+                if (rme.ShowToUser)
+                {
+                    TaskDialog.Show("Room-Floor Analysis Error", rme.UserMessage ?? rme.Message);
+                }
+                throw;
+            }
             catch (Exception ex)
             {
                 analysisException = ex;
-                _loggingService.WriteToLog($"Floor Analysis failed: {ex.Message}");
+                _loggingService.WriteToLog($"Unexpected error during floor analysis: {ex.Message}");
+                _loggingService.WriteToLog($"Stack Trace: {ex.StackTrace}");
+                TaskDialog.Show("Room-Floor Analysis Error",
+                    $"An unexpected error occurred during the floor analysis.\n\n{ex.Message}\n\nPlease check the log file for details.");
                 throw;
             }
             finally

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
+using RoomsManagerAddin.Core.Exceptions;
 using RoomsManagerAddin.Domain.Models.Filtering;
 using RoomsManagerAddin.Domain.Models.Shared;
 using RoomsManagerAddin.Infrastructure.Logging;
@@ -107,10 +108,23 @@ namespace RoomsManagerAddin.Domain.Services.Filtering
 
                 return roomItems;
             }
+            catch (FilterValidationException)
+            {
+                // Re-throw FilterValidationException as-is
+                throw;
+            }
+            catch (RevitApiException)
+            {
+                // Re-throw RevitApiException as-is
+                throw;
+            }
             catch (Exception ex)
             {
+                // Wrap unexpected exceptions in FilterValidationException
                 _loggingService.WriteToLog($"Error applying filter: {ex.Message}");
-                throw;
+                throw new FilterValidationException(
+                    filterConfig?.Name ?? "Unknown Filter",
+                    $"Failed to apply filter: {ex.Message}");
             }
         }
 

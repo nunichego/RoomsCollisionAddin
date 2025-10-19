@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
+using RoomsManagerAddin.Core.Exceptions;
 using RoomsManagerAddin.Domain.Models.Filtering;
 using RoomsManagerAddin.Infrastructure.Logging;
 
