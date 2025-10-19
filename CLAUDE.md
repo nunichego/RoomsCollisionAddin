@@ -66,29 +66,111 @@ The `Install.bat` file may sometimes deploy cached or old versions. Always use t
 
 ## Architecture
 
-### Service-Oriented Design
-The application uses a service-oriented architecture with dependency injection patterns:
+### Layered Architecture (Post-Refactoring v2.0)
 
-- **Controllers**: `RoomWallAnalysisController` orchestrates UI logic and coordinates between services
-- **Services**: Specialized services handle specific domains (geometry, collision analysis, parameter updates, etc.)
-- **Commands**: Revit IExternalCommand implementations that serve as entry points
-- **Models**: Data transfer objects and configuration classes
+The application uses a **clean layered architecture** with **dependency injection**:
+
+**Layers** (from top to bottom):
+1. **Presentation Layer** (`src/Presentation/`) - WPF windows and controls
+2. **Application Layer** (`src/Application/`) - Commands and Controllers
+3. **Domain Layer** (`src/Domain/`) - Business logic (Services and Models)
+4. **Infrastructure Layer** (`src/Infrastructure/`) - Revit API, Logging, Configuration
+5. **Core Layer** (`src/Core/`) - DI container, Exceptions, Extensions
+
+**Key Principles**:
+- Upper layers depend on lower layers
+- Domain layer is independent (no infrastructure dependencies)
+- Infrastructure implements domain interfaces
+- Core layer has no dependencies
+
+**Full Documentation**: See `docs/architecture/overview.md` for detailed architecture guide.
+
+### Dependency Injection
+
+**DI Container**: Lightweight custom container (`src/Core/DependencyInjection/ServiceContainer.cs`)
+
+**Service Lifetimes**:
+- **Singleton**: `ILoggingService`, `IConfigurationService` (shared across application)
+- **Transient**: All Domain and RevitApi services (document-dependent, created per-request)
+
+**Registration** (in `App.cs`):
+```csharp
+services.AddSingleton<ILoggingService, LoggingService>();
+services.AddTransient<ICollisionAnalysisService, CollisionAnalysisService>();
+```
+
+**Usage** (in Commands):
+```csharp
+var serviceContainer = App.ServiceContainer;
+var logging = serviceContainer.Resolve<ILoggingService>();
+var collisionService = serviceContainer.Resolve<ICollisionAnalysisService>();
+```
+
+**Full Documentation**: See `docs/architecture/dependency-injection.md` for DI usage guide.
 
 ### Key Services
-- `CollisionAnalysisService`: Core collision detection between rooms and walls
-- `RoomFilterService`: Advanced filtering system with complex rule configurations
-- `GeometryService`: Revit geometry calculations and spatial analysis
-- `ParameterUpdateService`: Updates Revit element parameters with analysis results
-- `ElementCollectorService`: Collects rooms and walls from Revit documents
 
-### UI Pattern
-Uses **WPF with XAML** for modern Windows-style interfaces. Templates are provided in `Resources/templates/` for consistent styling across dialogs.
+**Analysis Services** (`src/Domain/Services/Analysis/`):
+- `CollisionAnalysisService` - Orchestrates analysis (delegates to specialized services)
+- `WallBoundaryAnalysisService` - Room-Wall analysis using Revit Room Boundary API (fast)
+- `FloorBoundaryAnalysisService` - Room-Floor analysis using solid intersection (slower but accurate)
+
+**Filtering Services** (`src/Domain/Services/Filtering/`):
+- `RoomFilterService` - Advanced filtering with complex rule sets
+- `RoomParameterDiscoveryService` - Discovers available room parameters
+- `GenericElementFilterService` - Generic element filtering
+
+**Processing Services** (`src/Domain/Services/Processing/`):
+- `ParameterMappingExecutionService` - Executes parameter value mappings
+- `RoomProcessingService` - Room-specific processing logic
+
+**Infrastructure Services** (`src/Infrastructure/`):
+- `ElementCollectorService` - Collects rooms/walls/floors from document
+- `GeometryService` - Geometry calculations and solid operations
+- `LoggingService` - File-based logging with timestamps
+
+**Full Documentation**: See `docs/api/services.md` for complete service catalog.
+
+### Error Handling
+
+**Exception Hierarchy**:
+- `RoomsManagerException` (base) - Separates UserMessage from TechnicalDetails
+  - `RevitApiException` - Revit API failures
+  - `CollisionAnalysisException` - Analysis errors
+  - `FilterValidationException` - Filter validation errors
+
+**GlobalErrorHandler** (`src/Core/ErrorHandling/GlobalErrorHandler.cs`):
+- Centralized error handling
+- Automatic user-friendly message generation
+- Integration with logging service
+
+**Usage**:
+```csharp
+try {
+    var results = collisionService.AnalyzeRoomCollisions(...);
+}
+catch (RoomsManagerException rme) {
+    _loggingService.WriteToLog($"ERROR: {rme.Message}");
+    TaskDialog.Show("Error", rme.UserMessage);
+}
+```
 
 ### Filter System
+
 Advanced filtering system allows complex room filtering with:
-- **Filter Rules**: Parameter-based conditions (equals, greater than, contains, etc.)
-- **Filter Sets**: Logical groupings with AND/OR operators  
-- **Nested Logic**: Filter sets can contain other filter sets for complex conditions
+- **Filter Rules**: Parameter-based conditions (Equals, GreaterThan, Contains, etc.)
+- **Filter Sets**: Logical groupings with AND/OR operators
+- **Nested Logic**: `(A AND B) OR (C AND D)` supported
+- **Type-Safe**: Operators validated per parameter type
+- **Composable**: Filter sets can contain other filter sets
+
+**Example**:
+```csharp
+var filterConfig = roomFilter.CreateFilterConfiguration("Large Rooms");
+var areaRule = roomFilter.CreateFilterRule("Area", FilterOperator.GreaterThan, "100");
+filterConfig.RootFilterSet.Items.Add(areaRule);
+var matchingRooms = roomFilter.ApplyFilter(filterConfig);
+```
 
 ## Revit Integration
 
