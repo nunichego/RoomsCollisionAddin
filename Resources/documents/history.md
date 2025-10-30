@@ -772,4 +772,124 @@ Maintained complete architectural consistency with existing Floors implementatio
 
 ---
 
-*Last Updated: October 30, 2025 - Phase 13: Ceilings Category Support Complete*
+## Phase 14: Walls Dual Algorithm Support (October 30, 2025)
+
+### Context
+Enhanced Walls category analysis to support TWO algorithms via UI toggle, allowing users to choose between fast Room Boundary API approach and accurate Solid Intersection approach based on their needs.
+
+### Implementation Approach
+Instead of replacing existing WallBoundaryAnalysisService, implemented dual-algorithm pattern with runtime selection:
+- **Original**: WallBoundaryAnalysisService using Room Boundary API (fast, only detects proper room boundaries)
+- **New**: WallSolidAnalysisService using Solid Intersection (slower but detects all spatial intersections)
+- **UI**: Radio button toggle for algorithm selection (default: Room Boundary API)
+
+**Key Technical Decisions**:
+- **Algorithm Toggle**: Enum-based selection with UI controls
+- **Room Expansion**: Horizontal XY-plane diagonal expansion using **2cm offset** (user-specified, not default 1cm)
+- **Default Behavior**: Room Boundary API for backwards compatibility
+- **Architecture**: Both services coexist - no deletion of original code
+
+### Files Created (3 new files)
+1. `src/Domain/Models/Analysis/WallAnalysisAlgorithm.cs` - Enum with BoundaryApi and SolidBased options
+2. `src/Domain/Services/Analysis/IWallSolidAnalysisService.cs` - Interface for solid-based wall analysis
+3. `src/Domain/Services/Analysis/WallSolidAnalysisService.cs` - Full implementation (~400 lines)
+
+### Files Modified (6 files)
+1. **Domain Layer**:
+   - `src/Domain/Services/Analysis/ICollisionAnalysisService.cs` - Added algorithm parameter with default value
+   - `src/Domain/Services/Analysis/CollisionAnalysisService.cs` - Added routing logic based on algorithm selection
+
+2. **Application Layer**:
+   - `src/Application/Controllers/RoomWallAnalysisController.cs` - Added algorithm parameter to RunAnalysis() method
+
+3. **Presentation Layer**:
+   - `src/Presentation/Windows/RoomWallAnalysisWindow.xaml` - Added WallAlgorithmPanel with two RadioButtons
+   - `src/Presentation/Windows/RoomWallAnalysisWindow.xaml.cs` - Added algorithm tracking, event handlers, visibility logic
+
+4. **Core Layer**:
+   - `App.cs` - Registered IWallSolidAnalysisService as Transient service
+
+### Technical Implementation Details
+
+**WallSolidAnalysisService Algorithm**:
+- **Phase 1**: Pre-process all wall solids with bounding boxes
+- **Phase 2**: Pre-process room solids with **diagonal XY expansion (2cm)**
+- **Phase 3**: Collision detection with two-stage filtering:
+  - Stage 1: Bounding box intersection (fast pre-filter)
+  - Stage 2: Solid-solid intersection with expanded room solids (accurate)
+
+**Diagonal Expansion Logic (USER-SPECIFIED 2cm)**:
+```csharp
+CreateDiagonallyExpandedRoomSolids()
+- Offset distance: 2.0cm / 30.48 = 0.0656168 feet (NOT 1cm like floors/ceilings)
+- Diagonal 1: (+X, +Y) direction
+- Diagonal 2: (-X, -Y) direction
+- Result: Two offset solids covering XY-plane diagonal expansion
+```
+
+**Algorithm Routing in CollisionAnalysisService**:
+```csharp
+public List<RoomCollisionResult> AnalyzeRoomCollisions(
+    ...,
+    WallAnalysisAlgorithm algorithm = WallAnalysisAlgorithm.BoundaryApi)
+{
+    if (algorithm == WallAnalysisAlgorithm.SolidBased)
+        return _wallSolidService.AnalyzeRoomCollisions(...);
+    else
+        return _wallBoundaryService.AnalyzeRoomCollisions(...);
+}
+```
+
+**UI Integration**:
+- **Radio Buttons**:
+  - "Room Boundary API (Fast)" - IsChecked="True" by default
+  - "Solid Intersection (Accurate)" - Alternative option
+- **Tooltips**:
+  - Boundary API: "Uses Revit's native room boundary detection. Faster but only detects proper room boundaries."
+  - Solid-Based: "Uses solid-solid intersection with 2cm diagonal room expansion. Slower but detects all spatial intersections."
+- **Visibility**: WallAlgorithmPanel only visible when "Walls" category selected
+- **State Management**: `_selectedWallAlgorithm` field tracks user choice
+
+### Architecture Consistency
+Maintained complete architectural consistency:
+- Enum-based algorithm selection pattern
+- Interface-based service design
+- Same DI registration pattern (Transient services)
+- Same progress reporting integration
+- Same error handling patterns
+- **No modification** to existing WallBoundaryAnalysisService (both services coexist)
+
+### Backwards Compatibility
+- Default algorithm: Room Boundary API (existing behavior)
+- Existing code paths unaffected
+- Optional feature - users can continue using fast algorithm
+- UI clearly indicates algorithm differences (tooltips)
+
+### User Experience
+- Clear choice between speed (Boundary API) and accuracy (Solid-Based)
+- Tooltips explain trade-offs of each algorithm
+- Algorithm panel only appears for Walls category
+- Same parameter mapping, filtering, and results display for both algorithms
+- Log messages indicate which algorithm is being used
+
+### Verification
+- **Build Status**: ✅ Succeeded (0 errors, 2 warnings about unused _ceilingItems field)
+- **DI Registration**: ✅ Complete with all dependencies
+- **UI Integration**: ✅ Radio buttons, visibility logic, parameter passing
+- **Algorithm Routing**: ✅ Correct delegation based on user selection
+
+### Multi-Category Status
+Now supports **3 categories with 4 analysis strategies**:
+1. **Walls**: Room Boundary API (fast) OR Solid Intersection (accurate, 2cm diagonal)
+2. **Floors**: Solid Intersection (vertical ±1cm)
+3. **Ceilings**: Solid Intersection (vertical ±1cm)
+
+### Files Summary
+- **Total Files Created**: 3
+- **Total Files Modified**: 6
+- **Lines Added**: ~500+ (service implementation, enum, routing logic, UI)
+- **Architecture**: Clean separation with algorithm abstraction
+
+---
+
+*Last Updated: October 30, 2025 - Phase 14: Walls Dual Algorithm Support Complete*

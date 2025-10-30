@@ -136,6 +136,9 @@ namespace RoomsManagerAddin
             services.AddTransient<RoomsManagerAddin.Domain.Services.Analysis.IWallBoundaryAnalysisService,
                                   RoomsManagerAddin.Domain.Services.Analysis.WallBoundaryAnalysisService>();
 
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Analysis.IWallSolidAnalysisService,
+                                  RoomsManagerAddin.Domain.Services.Analysis.WallSolidAnalysisService>();
+
             services.AddTransient<RoomsManagerAddin.Domain.Services.Analysis.IFloorBoundaryAnalysisService,
                                   RoomsManagerAddin.Domain.Services.Analysis.FloorBoundaryAnalysisService>();
 

@@ -15,7 +15,7 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
     public interface ICollisionAnalysisService
     {
         /// <summary>
-        /// Analyzes room collisions with walls using the Room Boundary API.
+        /// Analyzes room collisions with walls using the specified algorithm.
         /// </summary>
         /// <param name="document">The Revit document containing the elements.</param>
         /// <param name="rooms">The list of rooms to analyze.</param>
@@ -23,6 +23,7 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
         /// <param name="parameterMappings">Parameter mapping configurations for data synchronization.</param>
         /// <param name="writeToLog">Action to write log messages.</param>
         /// <param name="progressReporter">Progress reporter for tracking analysis progress.</param>
+        /// <param name="algorithm">The wall analysis algorithm to use (default: BoundaryApi).</param>
         /// <returns>A list of room collision results.</returns>
         List<RoomCollisionResult> AnalyzeRoomCollisions(
             Document document,
@@ -30,7 +31,8 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
             List<Wall> walls,
             List<ParameterMappingConfiguration> parameterMappings,
             Action<string> writeToLog,
-            ProgressReporter progressReporter);
+            ProgressReporter progressReporter,
+            WallAnalysisAlgorithm algorithm = WallAnalysisAlgorithm.BoundaryApi);
 
         /// <summary>
         /// Analyzes room collisions with floors using solid intersection.

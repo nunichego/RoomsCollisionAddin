@@ -182,7 +182,7 @@ namespace RoomsManagerAddin.Application.Controllers
             return result;
         }
 
-        public List<RoomCollisionResult> RunAnalysis(List<RoomItem> roomItems, List<WallItem> wallItems, List<ParameterMappingConfiguration> parameterMappings, IntPtr? ownerWindowHandle = null)
+        public List<RoomCollisionResult> RunAnalysis(List<RoomItem> roomItems, List<WallItem> wallItems, List<ParameterMappingConfiguration> parameterMappings, IntPtr? ownerWindowHandle = null, WallAnalysisAlgorithm algorithm = WallAnalysisAlgorithm.BoundaryApi)
         {
             // Initialize debug logging with save dialog
             var logPath = _loggingService.InitializeDebugLogging(ownerWindowHandle);
@@ -190,6 +190,7 @@ namespace RoomsManagerAddin.Application.Controllers
             {
                 _loggingService.WriteToLog($"Analysis started - Log file: {logPath}");
                 _loggingService.WriteToLog($"Analyzing {roomItems.Count} rooms and {wallItems.Count} walls");
+                _loggingService.WriteToLog($"Wall Analysis Algorithm: {algorithm}");
             }
 
             // Convert back to Revit elements for analysis
@@ -234,7 +235,8 @@ namespace RoomsManagerAddin.Application.Controllers
                     walls,
                     parameterMappings,
                     _loggingService.WriteToLog,
-                    progressReporter
+                    progressReporter,
+                    algorithm
                 );
 
                 _loggingService.WriteToLog($"Analysis completed - {results.Count} results generated");

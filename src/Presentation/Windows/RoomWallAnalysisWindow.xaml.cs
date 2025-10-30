@@ -43,7 +43,8 @@ namespace RoomsManagerAddin.Presentation.Windows
         private ElementFilterConfiguration _currentElementFilter;
         private List<Element> _filteredElements;
         private string _selectedCategoryName; // Track selected category name
-        
+        private WallAnalysisAlgorithm _selectedWallAlgorithm = WallAnalysisAlgorithm.BoundaryApi; // Track wall algorithm choice
+
         // Parameter mapping configurations
         private ParameterMappingConfiguration _roomsToCategoryMapping;
         private ParameterMappingConfiguration _categoryToRoomsMapping;
@@ -162,6 +163,10 @@ namespace RoomsManagerAddin.Presentation.Windows
             RoomsSeparatorTextBox.TextChanged += (s, e) => OnRoomsSeparatorChanged();
             CategorySeparatorTextBox.TextChanged += (s, e) => OnCategorySeparatorChanged();
 
+            // Wall algorithm selection
+            BoundaryApiRadio.Checked += (s, e) => _selectedWallAlgorithm = WallAnalysisAlgorithm.BoundaryApi;
+            SolidBasedRadio.Checked += (s, e) => _selectedWallAlgorithm = WallAnalysisAlgorithm.SolidBased;
+
             // Analysis buttons
             RunAnalysisButton.Click += RunAnalysisButton_Click;
             CancelButton.Click += CancelButton_Click;
@@ -268,6 +273,12 @@ namespace RoomsManagerAddin.Presentation.Windows
                     // Update UI
                     UpdateElementFilterUI();
                     UpdateElementCounters();
+
+                    // Show/hide wall algorithm selector (only for Walls category)
+                    WallAlgorithmPanel.Visibility = selectedCategoryName.Equals("Walls", StringComparison.OrdinalIgnoreCase)
+                        ? System.Windows.Visibility.Visible
+                        : System.Windows.Visibility.Collapsed;
+
                     UpdateParameterMappingLabels(); // Update the parameter mapping labels
                     PopulateParameterMappingComboBoxes(); // Populate the mapping ComboBoxes
                     
@@ -310,7 +321,10 @@ namespace RoomsManagerAddin.Presentation.Windows
                 RightPanelGroupBox.Header = "Other Elements";
                 RoomsMappingGroupBox.Header = "Parameter Mapping: Rooms → Category";
                 CategoryMappingGroupBox.Header = "Parameter Mapping: Category → Rooms";
-                
+
+                // Hide wall algorithm panel
+                WallAlgorithmPanel.Visibility = System.Windows.Visibility.Collapsed;
+
                 StatusLabel.Content = "No element category selected";
             }
             catch (Exception ex)
@@ -2062,7 +2076,7 @@ namespace RoomsManagerAddin.Presentation.Windows
                 {
                     // Run wall analysis
                     var wallItems = ConvertElementsToWallItems(_filteredElements ?? new List<Element>());
-                    results = _controller.RunAnalysis(_filteredRooms, wallItems, parameterMappings, windowHelper.Handle);
+                    results = _controller.RunAnalysis(_filteredRooms, wallItems, parameterMappings, windowHelper.Handle, _selectedWallAlgorithm);
                 }
                 else
                 {

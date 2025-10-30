@@ -333,10 +333,39 @@
                                         <ComboBox x:Name="ElementCategoryCombo" 
                                                   Style="{StaticResource ModernComboBox}"
                                                   Width="200" HorizontalAlignment="Left"/>
-                                        <TextBlock x:Name="ElementCountText" Text="Elements: 0" 
+                                        <TextBlock x:Name="ElementCountText" Text="Elements: 0"
                                                   FontSize="11" Foreground="#888888" Margin="0,4,0,0"/>
+
+                                        <!-- Wall Analysis Algorithm Selection (only visible when Walls category selected) -->
+                                        <StackPanel x:Name="WallAlgorithmPanel" Orientation="Vertical"
+                                                   Margin="0,12,0,0" Visibility="Collapsed">
+                                            <TextBlock Text="Wall Analysis Algorithm" FontWeight="SemiBold"
+                                                      FontSize="11" Foreground="#333333" Margin="0,0,0,6"/>
+                                            <RadioButton x:Name="BoundaryApiRadio" GroupName="WallAlgorithm"
+                                                        Content="Room Boundary API (Fast)"
+                                                        IsChecked="True" FontSize="11" Margin="0,0,0,4">
+                                                <RadioButton.ToolTip>
+                                                    <TextBlock>
+                                                        <Run Text="Uses Revit's native room boundary detection."/>
+                                                        <LineBreak/>
+                                                        <Run Text="Faster but only detects proper room boundaries."/>
+                                                    </TextBlock>
+                                                </RadioButton.ToolTip>
+                                            </RadioButton>
+                                            <RadioButton x:Name="SolidBasedRadio" GroupName="WallAlgorithm"
+                                                        Content="Solid Intersection (Accurate)"
+                                                        FontSize="11">
+                                                <RadioButton.ToolTip>
+                                                    <TextBlock>
+                                                        <Run Text="Uses solid-solid intersection with 2cm diagonal room expansion."/>
+                                                        <LineBreak/>
+                                                        <Run Text="Slower but detects all spatial intersections."/>
+                                                    </TextBlock>
+                                                </RadioButton.ToolTip>
+                                            </RadioButton>
+                                        </StackPanel>
                                     </StackPanel>
-                                    
+
                                     <Button x:Name="ElementFilterStatusAddRuleButton" Grid.Column="1" Content="Add Rule" 
                                             Style="{StaticResource ModernButton}" VerticalAlignment="Center" 
                                             MinWidth="80" Visibility="Visible"/>
