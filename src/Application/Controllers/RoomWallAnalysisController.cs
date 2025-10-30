@@ -57,6 +57,7 @@ namespace RoomsManagerAddin.Application.Controllers
             var rooms = _elementCollectorService.GetRooms(_document);
             var walls = _elementCollectorService.GetWalls(_document);
             var floors = _elementCollectorService.GetFloors(_document);
+            var ceilings = _elementCollectorService.GetCeilings(_document);
 
             var roomItems = rooms.Select(r => new RoomItem
             {
@@ -91,11 +92,25 @@ namespace RoomsManagerAddin.Application.Controllers
                 Id = f.Id
             }).ToList();
 
+            var ceilingItems = ceilings.Select(c => new CeilingItem
+            {
+                Name = c.Name,
+                LevelName = c.LevelId != ElementId.InvalidElementId
+                    ? _document.GetElement(c.LevelId)?.Name ?? "Unknown"
+                    : "Unknown",
+                CeilingTypeName = c.GetTypeId() != ElementId.InvalidElementId
+                    ? _document.GetElement(c.GetTypeId())?.Name ?? "Unknown"
+                    : "Unknown",
+                Area = c.get_Parameter(BuiltInParameter.HOST_AREA_COMPUTED)?.AsDouble() ?? 0,
+                Id = c.Id
+            }).ToList();
+
             return new InitialDataResult
             {
                 Rooms = roomItems,
                 Walls = wallItems,
-                Floors = floorItems
+                Floors = floorItems,
+                Ceilings = ceilingItems
             };
         }
 
@@ -145,6 +160,23 @@ namespace RoomsManagerAddin.Application.Controllers
             if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "All Types")
             {
                 result = result.Where(f => f.FloorTypeName == typeFilter).ToList();
+            }
+
+            return result;
+        }
+
+        public List<CeilingItem> ApplyCeilingFilters(List<CeilingItem> ceilings, string levelFilter, string typeFilter)
+        {
+            var result = ceilings.ToList();
+
+            if (!string.IsNullOrEmpty(levelFilter) && levelFilter != "All Levels")
+            {
+                result = result.Where(c => c.LevelName == levelFilter).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "All Types")
+            {
+                result = result.Where(c => c.CeilingTypeName == typeFilter).ToList();
             }
 
             return result;
@@ -312,6 +344,92 @@ namespace RoomsManagerAddin.Application.Controllers
                 _loggingService.WriteToLog($"Stack Trace: {ex.StackTrace}");
                 TaskDialog.Show("Room-Floor Analysis Error",
                     $"An unexpected error occurred during the floor analysis.\n\n{ex.Message}\n\nPlease check the log file for details.");
+                throw;
+            }
+            finally
+            {
+                // Allow progress window to close and then close it
+                progressWindow?.AllowClose();
+                progressWindow?.Close();
+            }
+        }
+
+        public List<RoomCollisionResult> RunCeilingAnalysis(List<RoomItem> roomItems, List<CeilingItem> ceilingItems, List<ParameterMappingConfiguration> parameterMappings, IntPtr? ownerWindowHandle = null)
+        {
+            // Initialize debug logging with save dialog
+            var logPath = _loggingService.InitializeDebugLogging(ownerWindowHandle);
+            if (!string.IsNullOrEmpty(logPath))
+            {
+                _loggingService.WriteToLog($"Ceiling Analysis started - Log file: {logPath}");
+                _loggingService.WriteToLog($"Analyzing {roomItems.Count} rooms and {ceilingItems.Count} ceilings");
+            }
+
+            // Convert back to Revit elements for analysis
+            var rooms = roomItems.Select(ri => _document.GetElement(ri.Id) as Room).Where(r => r != null).ToList();
+            var ceilings = ceilingItems.Select(ci => _document.GetElement(ci.Id) as Ceiling).Where(c => c != null).ToList();
+
+            // DEBUG: Log ceiling conversion results
+            _loggingService.WriteToLog($"CONTROLLER: Converting {ceilingItems.Count} CeilingItems to Ceiling objects");
+            _loggingService.WriteToLog($"CONTROLLER: Successfully converted {ceilings.Count} Ceiling objects");
+            if (ceilings.Any())
+            {
+                var firstFewCeilingIds = ceilings.Take(5).Select(c => c.Id.Value.ToString()).ToList();
+                _loggingService.WriteToLog($"CONTROLLER: First 5 converted ceiling IDs: {string.Join(", ", firstFewCeilingIds)}");
+            }
+
+            // Create and show modern progress window
+            ModernProgressWindow progressWindow = null;
+            List<RoomCollisionResult> results = null;
+            Exception analysisException = null;
+
+            try
+            {
+                progressWindow = new ModernProgressWindow();
+                if (ownerWindowHandle.HasValue)
+                {
+                    var helper = new System.Windows.Interop.WindowInteropHelper(progressWindow);
+                    helper.Owner = ownerWindowHandle.Value;
+                }
+                progressWindow.Show();
+
+                // Create modern progress reporter with type-safe design
+                var progressReporter = new ProgressReporter(progressInfo =>
+                {
+                    _loggingService.WriteToLog($"{progressInfo.Title}: {progressInfo.Stage} - {progressInfo.Detail} ({progressInfo.OverallProgressPercentage:F0}%)");
+                    progressWindow?.UpdateProgress(progressInfo);
+                });
+
+                // Run ceiling analysis with modern progress reporting
+                results = _collisionAnalysisService.AnalyzeRoomCeilingsCollisions(
+                    _document,
+                    rooms,
+                    ceilings,
+                    parameterMappings,
+                    _loggingService.WriteToLog,
+                    progressReporter
+                );
+
+                _loggingService.WriteToLog($"Ceiling Analysis completed - {results.Count} results generated");
+                return results;
+            }
+            catch (RoomsManagerException rme)
+            {
+                analysisException = rme;
+                _loggingService.WriteToLog($"Ceiling Analysis failed: {rme.Message}");
+                _loggingService.WriteToLog($"Technical Details: {rme.TechnicalDetails}");
+                if (rme.ShowToUser)
+                {
+                    TaskDialog.Show("Room-Ceiling Analysis Error", rme.UserMessage ?? rme.Message);
+                }
+                throw;
+            }
+            catch (Exception ex)
+            {
+                analysisException = ex;
+                _loggingService.WriteToLog($"Unexpected error during ceiling analysis: {ex.Message}");
+                _loggingService.WriteToLog($"Stack Trace: {ex.StackTrace}");
+                TaskDialog.Show("Room-Ceiling Analysis Error",
+                    $"An unexpected error occurred during the ceiling analysis.\n\n{ex.Message}\n\nPlease check the log file for details.");
                 throw;
             }
             finally

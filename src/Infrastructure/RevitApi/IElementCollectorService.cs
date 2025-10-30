@@ -26,5 +26,10 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
         /// <param name="document">The Revit document</param>
         /// <returns>List of all floors</returns>
         List<Floor> GetFloors(Document document);
+
+        /// <summary>Get all ceilings in document</summary>
+        /// <param name="document">The Revit document</param>
+        /// <returns>List of all ceilings</returns>
+        List<Ceiling> GetCeilings(Document document);
     }
 }

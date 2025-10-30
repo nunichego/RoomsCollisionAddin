@@ -35,6 +35,7 @@ namespace RoomsManagerAddin.Presentation.Windows
         private List<RoomItem> _filteredRooms;
         private List<WallItem> _wallItems; // Original wall data for analysis
         private List<FloorItem> _floorItems; // Original floor data for analysis
+        private List<CeilingItem> _ceilingItems; // Original ceiling data for analysis
 
         // Element panel data
         private List<CategoryInfo> _availableCategories;
@@ -1538,6 +1539,41 @@ namespace RoomsManagerAddin.Presentation.Windows
             return floorItems;
         }
 
+        private List<CeilingItem> ConvertElementsToCeilingItems(List<Element> elements)
+        {
+            var ceilingItems = new List<CeilingItem>();
+
+            foreach (var element in elements)
+            {
+                if (element is Ceiling ceiling)
+                {
+                    try
+                    {
+                        var ceilingItem = new CeilingItem
+                        {
+                            Name = ceiling.Name,
+                            LevelName = ceiling.LevelId != ElementId.InvalidElementId
+                                ? _document.GetElement(ceiling.LevelId)?.Name ?? "Unknown"
+                                : "Unknown",
+                            CeilingTypeName = ceiling.GetTypeId() != ElementId.InvalidElementId
+                                ? _document.GetElement(ceiling.GetTypeId())?.Name ?? "Unknown"
+                                : "Unknown",
+                            Area = ceiling.get_Parameter(BuiltInParameter.HOST_AREA_COMPUTED)?.AsDouble() ?? 0,
+                            Id = ceiling.Id
+                        };
+
+                        ceilingItems.Add(ceilingItem);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error converting ceiling {ceiling.Id} to CeilingItem: {ex.Message}");
+                    }
+                }
+            }
+
+            return ceilingItems;
+        }
+
         // Helper methods for safe wall parameter access
         private string GetSafeLevelName(Wall wall)
         {
@@ -2006,7 +2042,7 @@ namespace RoomsManagerAddin.Presentation.Windows
                 // Determine which analysis to run based on selected category
                 if (string.IsNullOrEmpty(_selectedCategoryName) || _selectedCategoryName == "Select Category")
                 {
-                    MessageBox.Show("Please select a category (Walls or Floors) before running analysis.", "Category Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("Please select a category (Walls, Floors, or Ceilings) before running analysis.", "Category Required", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -2016,6 +2052,12 @@ namespace RoomsManagerAddin.Presentation.Windows
                     var floorItems = ConvertElementsToFloorItems(_filteredElements ?? new List<Element>());
                     results = _controller.RunFloorAnalysis(_filteredRooms, floorItems, parameterMappings, windowHelper.Handle);
                 }
+                else if (_selectedCategoryName.Equals("Ceilings", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Run ceiling analysis
+                    var ceilingItems = ConvertElementsToCeilingItems(_filteredElements ?? new List<Element>());
+                    results = _controller.RunCeilingAnalysis(_filteredRooms, ceilingItems, parameterMappings, windowHelper.Handle);
+                }
                 else if (_selectedCategoryName.Equals("Walls", StringComparison.OrdinalIgnoreCase))
                 {
                     // Run wall analysis
@@ -2024,7 +2066,7 @@ namespace RoomsManagerAddin.Presentation.Windows
                 }
                 else
                 {
-                    MessageBox.Show($"Analysis for category '{_selectedCategoryName}' is not yet supported.\n\nSupported categories: Walls, Floors", "Unsupported Category", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show($"Analysis for category '{_selectedCategoryName}' is not yet supported.\n\nSupported categories: Walls, Floors, Ceilings", "Unsupported Category", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -2033,7 +2075,9 @@ namespace RoomsManagerAddin.Presentation.Windows
                 var roomsWithCollisions = results.Count(r => r.WallsColliding > 0);
                 var totalCollisions = results.Sum(r => r.WallsColliding);
 
-                var categoryLabel = _selectedCategoryName.Equals("Floors", StringComparison.OrdinalIgnoreCase) ? "Floor Intersections" : "Wall Collisions";
+                var categoryLabel = _selectedCategoryName.Equals("Floors", StringComparison.OrdinalIgnoreCase) ? "Floor Intersections"
+                    : _selectedCategoryName.Equals("Ceilings", StringComparison.OrdinalIgnoreCase) ? "Ceiling Intersections"
+                    : "Wall Collisions";
 
                 var message = $"Analysis Complete!\n\n" +
                              $"Total Rooms: {totalRooms}\n" +

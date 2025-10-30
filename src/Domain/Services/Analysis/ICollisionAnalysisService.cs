@@ -49,5 +49,23 @@ namespace RoomsManagerAddin.Domain.Services.Analysis
             List<ParameterMappingConfiguration> parameterMappings,
             Action<string> writeToLog,
             ProgressReporter progressReporter);
+
+        /// <summary>
+        /// Analyzes room collisions with ceilings using solid intersection.
+        /// </summary>
+        /// <param name="document">The Revit document containing the elements.</param>
+        /// <param name="rooms">The list of rooms to analyze.</param>
+        /// <param name="ceilings">The list of ceilings to check for collisions.</param>
+        /// <param name="parameterMappings">Parameter mapping configurations for data synchronization.</param>
+        /// <param name="writeToLog">Action to write log messages.</param>
+        /// <param name="progressReporter">Progress reporter for tracking analysis progress.</param>
+        /// <returns>A list of room collision results.</returns>
+        List<RoomCollisionResult> AnalyzeRoomCeilingsCollisions(
+            Document document,
+            List<Room> rooms,
+            List<Ceiling> ceilings,
+            List<ParameterMappingConfiguration> parameterMappings,
+            Action<string> writeToLog,
+            ProgressReporter progressReporter);
     }
 }

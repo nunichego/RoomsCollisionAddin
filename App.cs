@@ -139,6 +139,9 @@ namespace RoomsManagerAddin
             services.AddTransient<RoomsManagerAddin.Domain.Services.Analysis.IFloorBoundaryAnalysisService,
                                   RoomsManagerAddin.Domain.Services.Analysis.FloorBoundaryAnalysisService>();
 
+            services.AddTransient<RoomsManagerAddin.Domain.Services.Analysis.ICeilingBoundaryAnalysisService,
+                                  RoomsManagerAddin.Domain.Services.Analysis.CeilingBoundaryAnalysisService>();
+
             // ============================================
             // Domain Services - Filtering (Transient)
             // ============================================

@@ -101,5 +101,33 @@ namespace RoomsManagerAddin.Infrastructure.RevitApi
                 throw new RevitApiException("collecting floors", ex);
             }
         }
+
+        /// <summary>
+        /// Get all ceilings from the document
+        /// </summary>
+        /// <param name="document">The Revit document to collect ceilings from</param>
+        /// <returns>List of ceilings with valid ceiling types</returns>
+        /// <exception cref="ArgumentNullException">Thrown when document is null</exception>
+        /// <exception cref="RevitApiException">Thrown when Revit API operations fail</exception>
+        public List<Ceiling> GetCeilings(Document document)
+        {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document), "Document cannot be null");
+
+            try
+            {
+                var collector = new FilteredElementCollector(document);
+                var ceilings = collector.OfClass(typeof(Ceiling))
+                                      .Cast<Ceiling>()
+                                      .Where(c => c.GetTypeId() != ElementId.InvalidElementId)
+                                      .ToList();
+
+                return ceilings;
+            }
+            catch (Exception ex)
+            {
+                throw new RevitApiException("collecting ceilings", ex);
+            }
+        }
     }
 }

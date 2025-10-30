@@ -10,5 +10,6 @@ namespace RoomsManagerAddin.Domain.Models.Shared
         public List<RoomItem> Rooms { get; set; } = new List<RoomItem>();
         public List<WallItem> Walls { get; set; } = new List<WallItem>();
         public List<FloorItem> Floors { get; set; } = new List<FloorItem>();
+        public List<CeilingItem> Ceilings { get; set; } = new List<CeilingItem>();
     }
 }
